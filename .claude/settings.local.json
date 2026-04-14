@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(python3 -c \"import paramiko; print\\('paramiko ready'\\)\")",
+      "Bash(py --version)",
+      "Bash(python3 -c \"import paramiko; print\\('paramiko version:', paramiko.__version__\\)\")",
+      "Bash(py -3 -c \"import paramiko; print\\('paramiko version:', paramiko.__version__\\)\")",
+      "Bash(py -3)"
+    ]
+  }
+}

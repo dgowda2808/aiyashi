@@ -90,7 +90,9 @@ function renderCurrentCard() {
   const container = document.getElementById('cards-container');
   if (!container) return;
 
-  if (!discoverProfiles.length || currentCardIndex >= discoverProfiles.length) {
+  const filtered = applyFilters(discoverProfiles);
+
+  if (!filtered.length || currentCardIndex >= filtered.length) {
     container.innerHTML = `
       <div style="text-align:center;padding:60px 20px;color:var(--text-muted)">
         <div style="font-size:48px;margin-bottom:16px">🎉</div>
@@ -100,7 +102,7 @@ function renderCurrentCard() {
     return;
   }
 
-  const p = discoverProfiles[currentCardIndex];
+  const p = filtered[currentCardIndex];
   const isVerified = p.email_verified || p.phone_verified;
 
   container.innerHTML = `
@@ -421,6 +423,21 @@ function initConvItems() {
 
 // ── Swipe actions ─────────────────────────────────────────────────
 export async function handleSwipeAction(action, userId) {
+  // Boost is NOT a swipe — handle separately
+  if (action === 'boost') {
+    try {
+      const { auth: authApi } = await import('./api.js');
+      await authApi.boost();
+      showMsgLimitToast('⚡ Profile boosted! You\'re now at the top of feeds for 30 min.');
+      // Update boost button state in profile screen
+      const btn = document.getElementById('boost-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Boosted Today ⚡'; btn.style.opacity = '0.6'; }
+    } catch (err) {
+      showMsgLimitToast(err.message || 'Could not boost right now');
+    }
+    return;
+  }
+
   try {
     // Flash animation
     const flash = document.getElementById('flash-like-current');
@@ -474,6 +491,104 @@ function startClock() {
 // ── Lazy import to avoid circular dep ────────────────────────────
 let swipes_api;
 
+// ── Active filters ────────────────────────────────────────────────
+let activeFilters = { minAge: 18, maxAge: 80, verifiedOnly: false, location: '' };
+
+function applyFilters(profiles) {
+  return profiles.filter(p => {
+    if (activeFilters.verifiedOnly && !p.email_verified && !p.phone_verified) return false;
+    if (p.age) {
+      if (p.age < activeFilters.minAge) return false;
+      if (p.age > activeFilters.maxAge) return false;
+    }
+    if (activeFilters.location) {
+      const loc = (p.location_text || '').toLowerCase();
+      if (!loc.includes(activeFilters.location.toLowerCase())) return false;
+    }
+    return true;
+  });
+}
+
+function openFilterDrawer() {
+  let drawer = document.getElementById('filter-drawer');
+  if (!drawer) {
+    drawer = document.createElement('div');
+    drawer.id = 'filter-drawer';
+    drawer.style.cssText = `position:fixed;top:0;right:0;width:320px;height:100%;background:#1a1a2e;border-left:1px solid rgba(255,255,255,0.08);z-index:8000;padding:28px 24px;overflow-y:auto;transform:translateX(100%);transition:transform .3s ease;box-shadow:-20px 0 60px rgba(0,0,0,.5)`;
+    drawer.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px">
+        <div style="font-size:17px;font-weight:700;color:#fff">Filters</div>
+        <button id="filter-close" style="background:rgba(255,255,255,.08);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px">✕</button>
+      </div>
+      <div style="margin-bottom:20px">
+        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Age Range</div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input id="f-min-age" type="number" min="18" max="80" value="${activeFilters.minAge}" style="width:70px;padding:8px 10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;font-size:14px;text-align:center">
+          <span style="color:rgba(255,255,255,.4)">to</span>
+          <input id="f-max-age" type="number" min="18" max="80" value="${activeFilters.maxAge}" style="width:70px;padding:8px 10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;font-size:14px;text-align:center">
+        </div>
+      </div>
+      <div style="margin-bottom:20px">
+        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Location</div>
+        <input id="f-location" type="text" placeholder="City or area..." value="${activeFilters.location}" style="width:100%;box-sizing:border-box;padding:10px 14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;font-size:14px">
+      </div>
+      <div style="margin-bottom:28px">
+        <label style="display:flex;align-items:center;gap:12px;cursor:pointer">
+          <div id="f-verified-toggle" style="width:44px;height:24px;border-radius:12px;background:${activeFilters.verifiedOnly ? 'linear-gradient(135deg,#7c3aed,#ec4899)' : 'rgba(255,255,255,.15)'};position:relative;transition:.2s;flex-shrink:0">
+            <div style="position:absolute;top:3px;left:${activeFilters.verifiedOnly ? '23px' : '3px'};width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s"></div>
+          </div>
+          <span style="font-size:14px;color:rgba(255,255,255,.8)">Verified profiles only</span>
+        </label>
+      </div>
+      <button id="filter-apply" style="width:100%;padding:14px;background:linear-gradient(135deg,#7c3aed,#ec4899);border:none;border-radius:14px;color:#fff;font-size:15px;font-weight:700;cursor:pointer">Apply Filters</button>
+      <button id="filter-reset" style="width:100%;padding:12px;background:transparent;border:1px solid rgba(255,255,255,.12);border-radius:14px;color:rgba(255,255,255,.5);font-size:13px;cursor:pointer;margin-top:10px">Reset</button>
+    `;
+    document.body.appendChild(drawer);
+
+    // Toggle handler
+    let verifiedOn = activeFilters.verifiedOnly;
+    drawer.querySelector('#f-verified-toggle').addEventListener('click', () => {
+      verifiedOn = !verifiedOn;
+      const tog = drawer.querySelector('#f-verified-toggle');
+      tog.style.background = verifiedOn ? 'linear-gradient(135deg,#7c3aed,#ec4899)' : 'rgba(255,255,255,.15)';
+      tog.querySelector('div').style.left = verifiedOn ? '23px' : '3px';
+    });
+
+    drawer.querySelector('#filter-apply').addEventListener('click', () => {
+      activeFilters.minAge      = parseInt(drawer.querySelector('#f-min-age').value) || 18;
+      activeFilters.maxAge      = parseInt(drawer.querySelector('#f-max-age').value) || 80;
+      activeFilters.location    = drawer.querySelector('#f-location').value.trim();
+      activeFilters.verifiedOnly = verifiedOn;
+      closeFilterDrawer();
+      currentCardIndex = 0;
+      renderCurrentCard();
+    });
+
+    drawer.querySelector('#filter-reset').addEventListener('click', () => {
+      activeFilters = { minAge: 18, maxAge: 80, verifiedOnly: false, location: '' };
+      verifiedOn = false;
+      closeFilterDrawer();
+      currentCardIndex = 0;
+      renderCurrentCard();
+    });
+
+    drawer.querySelector('#filter-close').addEventListener('click', closeFilterDrawer);
+
+    // Click outside to close
+    document.addEventListener('click', (e) => {
+      if (!drawer.contains(e.target) && !document.getElementById('tb-filter-btn')?.contains(e.target)) {
+        closeFilterDrawer();
+      }
+    });
+  }
+  requestAnimationFrame(() => { drawer.style.transform = 'translateX(0)'; });
+}
+
+function closeFilterDrawer() {
+  const d = document.getElementById('filter-drawer');
+  if (d) d.style.transform = 'translateX(100%)';
+}
+
 // ── Boot ──────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   const { swipes: swipesModule } = await import('./api.js');
@@ -509,6 +624,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   wireSocket();
   wireSendButton('msg-input',           'msg-send-btn');
   wireSendButton('mobile-msg-input',    'mobile-msg-send-btn');
+
+  // Wire top-bar buttons
+  document.getElementById('tb-filter-btn')?.addEventListener('click', openFilterDrawer);
+  document.getElementById('tb-boost-btn')?.addEventListener('click', async () => {
+    try {
+      const { auth: authApi } = await import('./api.js');
+      await authApi.boost();
+      showMsgLimitToast('⚡ Profile boosted! You\'re at the top of feeds for 30 min.');
+    } catch (err) {
+      showMsgLimitToast(err.message || 'Already boosted today — come back tomorrow!');
+    }
+  });
+  document.getElementById('tb-gold-btn')?.addEventListener('click', () => {
+    navigate('profile');
+    setTimeout(() => {
+      document.getElementById('section-female-only')?.scrollIntoView({ behavior: 'smooth' });
+    }, 200);
+  });
 
   // Load data
   loadDiscoverFeed();

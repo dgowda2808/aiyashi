@@ -14,6 +14,9 @@ const rateLimit  = require('express-rate-limit');
 
 const app    = express();
 const server = http.createServer(app);
+
+// Trust Nginx reverse proxy (fixes X-Forwarded-For rate-limit error)
+app.set('trust proxy', 1);
 const io     = new Server(server, {
   cors: {
     origin:      process.env.CLIENT_URL || '*',
