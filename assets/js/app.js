@@ -3,7 +3,7 @@
  * Checks auth state, loads real data from API, wires UI
  */
 import { initRouter, navigate, openMobileMessages } from './router.js';
-import { initDiscover }   from './discover.js';
+import { initDiscover, revealPhoto } from './discover.js';
 import { initMessages }   from './messages.js';
 import { initProfile }    from './profile.js';
 import { auth, profiles, matches, currentUser, tokens } from './api.js';
@@ -26,6 +26,50 @@ function updateTopBarUser() {
   if (!user) return;
   const titleEl = document.getElementById('top-bar-title');
   if (titleEl) titleEl.textContent = `Welcome back, ${user.display_name} 👋`;
+}
+
+// ── Role-based UI (female features) ──────────────────────────────
+function initRoleFeatures() {
+  const user = currentUser.get();
+  if (!user) return;
+  const isFemale = user.role === 'female';
+
+  // Earnings banner on discover
+  const banner = document.getElementById('earnings-banner');
+  if (banner) banner.style.display = isFemale ? '' : 'none';
+
+  // Female-only profile sections
+  const femaleSection  = document.getElementById('section-female-only');
+  const referralSection = document.getElementById('section-referral');
+  if (femaleSection)   femaleSection.style.display   = isFemale ? '' : 'none';
+  if (referralSection) referralSection.style.display = isFemale ? '' : 'none';
+
+  // Populate referral link
+  if (isFemale && user.referral_code) {
+    const inp = document.getElementById('referral-link-input');
+    if (inp) inp.value = `${location.origin}/?ref=${user.referral_code}`;
+  }
+
+  // Check if boost already used today
+  if (isFemale && user.last_boost_at) {
+    const lastBoost = new Date(user.last_boost_at);
+    const today     = new Date();
+    const sameDay   = lastBoost.toDateString() === today.toDateString();
+    if (sameDay) {
+      const btn = document.getElementById('boost-btn');
+      const statusEl = document.getElementById('boost-status-text');
+      if (btn) { btn.disabled = true; btn.textContent = 'Boosted Today ⚡'; btn.style.opacity = '0.6'; }
+      if (statusEl) statusEl.textContent = 'Profile boosted! Come back tomorrow for your next free boost.';
+    }
+  }
+
+  // Update top bar sub with credit balance
+  if (user.credit_balance !== undefined) {
+    const subEl = document.getElementById('top-bar-sub');
+    if (subEl && isFemale) {
+      subEl.textContent = `Premium Member · $${user.credit_balance} credit balance`;
+    }
+  }
 }
 
 // ── Discover feed ─────────────────────────────────────────────────
@@ -117,8 +161,13 @@ function renderCurrentCard() {
       </div>
     </div>`;
 
-  // Re-init discover interactions on new card
-  initDiscover();
+  // Wire action buttons directly to handleSwipeAction
+  container.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', () => handleSwipeAction(btn.dataset.action, btn.dataset.id));
+  });
+  // Wire reveal button
+  const revealBtn = container.querySelector('#btn-reveal-current');
+  if (revealBtn) revealBtn.addEventListener('click', () => revealPhoto('current'));
 }
 
 // ── Load matches into sidebar ─────────────────────────────────────
@@ -265,6 +314,12 @@ function wireSocket() {
     showMatchToast(data);
     loadMatches();
   });
+
+  sock.on('error', (data) => {
+    if (data?.code === 'MSG_LIMIT') {
+      showMsgLimitToast(data.message);
+    }
+  });
 }
 
 // ── Message send ──────────────────────────────────────────────────
@@ -291,6 +346,26 @@ function wireSendButton(inputId, btnId) {
     clearTimeout(typingTimer);
     typingTimer = setTimeout(() => sendStopTyping(activeMatchId), 2000);
   });
+}
+
+// ── Message limit toast ───────────────────────────────────────────
+function showMsgLimitToast(message) {
+  const existing = document.getElementById('msg-limit-toast');
+  if (existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.id = 'msg-limit-toast';
+  toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);opacity:0;transition:all .4s cubic-bezier(.34,1.56,.64,1);background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;padding:14px 22px;border-radius:16px;font-size:13px;font-weight:600;z-index:9999;max-width:320px;text-align:center;box-shadow:0 16px 40px rgba(124,58,237,.45)';
+  toast.textContent = message || 'Daily limit reached (10/day). Upgrade to Premium for unlimited messages.';
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => {
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+    toast.style.opacity = '1';
+  });
+  setTimeout(() => {
+    toast.style.transform = 'translateX(-50%) translateY(80px)';
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 400);
+  }, 4000);
 }
 
 // ── Match toast ───────────────────────────────────────────────────
@@ -421,6 +496,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   showAppShell();
   updateTopBarUser();
+  initRoleFeatures();
   connectSocket();
 
   initDiscover();

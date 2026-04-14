@@ -1,5 +1,5 @@
 /**
- * server/index.js — Datemap API
+ * server/index.js — Aiyashi API
  * Express + Socket.io on a single port
  */
 require('dotenv').config();
@@ -116,7 +116,7 @@ require('./socket/chat')(io);
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`
   ╔══════════════════════════════════════╗
-  ║   Datemap Server             ║
+  ║   Aiyashi Server             ║
   ║   http://localhost:${PORT}              ║
   ║   ENV: ${(process.env.NODE_ENV || 'development').padEnd(26)}║
   ╚══════════════════════════════════════╝

@@ -1,7 +1,7 @@
 {
   "name": "datemap",
   "version": "1.0.0",
-  "description": "Datemap — Trust-first dating app",
+  "description": "Aiyashi — Trust-first dating app",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",

@@ -87,6 +87,25 @@ module.exports = (io) => {
         );
         if (!matchRows.length) return socket.emit('error', { message: 'Not authorised' });
 
+        // Daily message limit for non-premium users (10/day, photos excluded)
+        const { rows: [userRow] } = await query(
+          'SELECT is_premium FROM users WHERE id = $1',
+          [userId]
+        );
+        if (!userRow.is_premium) {
+          const { rows: [countRow] } = await query(
+            `SELECT COUNT(*) AS cnt FROM messages
+             WHERE sender_id = $1 AND created_at >= CURRENT_DATE`,
+            [userId]
+          );
+          if (parseInt(countRow.cnt) >= 10) {
+            return socket.emit('error', {
+              message: 'Daily message limit reached (10/day). Upgrade to Premium for unlimited messages.',
+              code: 'MSG_LIMIT',
+            });
+          }
+        }
+
         // Save to DB
         const { rows: [msg] } = await query(
           `INSERT INTO messages (match_id, sender_id, content)

@@ -82,10 +82,10 @@ async function apiFetch(path, options = {}) {
 
 // ── Auth ──────────────────────────────────────────────────────────
 export const auth = {
-  async register(email, password, displayName) {
+  async register(email, password, displayName, role = 'female', referralCode = null) {
     const data = await apiFetch('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, display_name: displayName }),
+      body: JSON.stringify({ email, password, display_name: displayName, role, referral_code: referralCode || undefined }),
     });
     tokens.set(data.access_token, data.refresh_token);
     currentUser.set(data.user);
@@ -120,6 +120,20 @@ export const auth = {
   },
 
   isLoggedIn() { return !!tokens.access; },
+
+  async boost() {
+    return apiFetch('/api/auth/boost', { method: 'POST' });
+  },
+
+  async uploadVerification(formData) {
+    const res = await fetch('/api/profiles/verify', {
+      method:  'POST',
+      headers: { 'Authorization': `Bearer ${tokens.access}` },
+      body:    formData,
+    });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Upload failed');
+    return res.json();
+  },
 };
 
 // ── Profiles ──────────────────────────────────────────────────────

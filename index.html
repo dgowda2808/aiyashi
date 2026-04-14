@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Datemap — Trusted Dating</title>
+<title>Aiyashi — Trust-First Dating</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/variables.css">
@@ -30,7 +30,7 @@
     <!-- Brand -->
     <div class="auth-brand">
       <div class="auth-brand-icon">✦</div>
-      <div class="auth-brand-name">Datemap</div>
+      <div class="auth-brand-name">Aiyashi</div>
     </div>
     <div class="auth-tagline">Trust-First Dating</div>
 
@@ -65,6 +65,24 @@
 
     <!-- Register form -->
     <form id="form-register" class="auth-form" style="display:none" autocomplete="on">
+      <!-- Role Selection -->
+      <div class="auth-field">
+        <label class="auth-label">I am a…</label>
+        <div class="role-selector">
+          <label class="role-option selected" id="role-female-label">
+            <input type="radio" name="reg-role" id="role-female" value="female" checked onchange="selectRole('female')">
+            <span class="role-emoji">👩</span>
+            <span>Sugar Baby</span>
+          </label>
+          <label class="role-option" id="role-male-label">
+            <input type="radio" name="reg-role" id="role-male" value="male" onchange="selectRole('male')">
+            <span class="role-emoji">💎</span>
+            <span>Sugar Daddy</span>
+          </label>
+        </div>
+        <div class="role-hint" id="role-hint-female">✨ Sign up free and get <strong style="color:#FBD38D">$30 credit + Premium</strong> instantly!</div>
+        <div class="role-hint" id="role-hint-male" style="display:none">Join thousands of successful men on Aiyashi</div>
+      </div>
       <div class="auth-field">
         <label class="auth-label">Display Name</label>
         <input class="auth-input" type="text" id="reg-name" placeholder="First name or nickname" required maxlength="40">
@@ -80,16 +98,102 @@
           <button type="button" class="auth-eye-btn" onclick="togglePw('reg-password', this)">👁</button>
         </div>
       </div>
-      <div class="auth-trust-note">
+      <div class="auth-field">
+        <label class="auth-label">Referral Code <span style="color:var(--text-faint);font-weight:400">(optional)</span></label>
+        <input class="auth-input" type="text" id="reg-referral" placeholder="Enter referral code for bonus" maxlength="10" style="text-transform:uppercase">
+      </div>
+      <div class="auth-trust-note" id="reg-trust-female">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Email verification required after signup. Phone & Face Check available in your profile.
+        Free sign up · Instant Premium · $30 credit · No credit card needed
+      </div>
+      <div class="auth-trust-note" id="reg-trust-male" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Verified profiles only · Safe &amp; Discreet · Cancel anytime
       </div>
       <button class="auth-submit-btn" type="submit" id="btn-register">
-        <span class="btn-text">Create Account</span>
+        <span class="btn-text">Sign Up Free — Get $30 Credit</span>
         <span class="btn-spinner" style="display:none">⏳</span>
       </button>
-      <div class="auth-legal">By signing up you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></div>
+      <div class="auth-legal">By signing up you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a> · <a href="mailto:info@aiyashi.vip">info@aiyashi.vip</a></div>
     </form>
+  </div>
+</div>
+
+<!-- ═══════════════════ WELCOME MODAL ══ -->
+<div class="welcome-overlay hidden" id="welcome-overlay">
+  <div class="welcome-modal">
+    <div class="welcome-confetti">🎉</div>
+    <div class="welcome-title">Welcome to Aiyashi!</div>
+    <div class="welcome-subtitle">You're now a <strong>Premium Member</strong> — enjoy all features free!</div>
+    <div class="welcome-perks">
+      <div class="welcome-perk">
+        <div class="welcome-perk-icon">💰</div>
+        <div class="welcome-perk-text">
+          <div class="welcome-perk-title">$30 Credit Added</div>
+          <div class="welcome-perk-sub">Use for boosts, super likes &amp; premium features</div>
+        </div>
+        <div class="welcome-perk-badge">FREE</div>
+      </div>
+      <div class="welcome-perk">
+        <div class="welcome-perk-icon">⭐</div>
+        <div class="welcome-perk-text">
+          <div class="welcome-perk-title">Premium Member — 30 Days</div>
+          <div class="welcome-perk-sub">Unlimited likes, see who liked you, no ads</div>
+        </div>
+        <div class="welcome-perk-badge">ACTIVE</div>
+      </div>
+      <div class="welcome-perk">
+        <div class="welcome-perk-icon">⚡</div>
+        <div class="welcome-perk-text">
+          <div class="welcome-perk-title">Daily Profile Boost</div>
+          <div class="welcome-perk-sub">Appear at the top of feeds once every day</div>
+        </div>
+        <div class="welcome-perk-badge">DAILY</div>
+      </div>
+    </div>
+    <div class="welcome-earn-note">💵 <strong>Earn $100–$200</strong> — Connect with 5 Sugar Daddies and unlock real earnings! Details in your profile.</div>
+    <button class="welcome-cta" id="welcome-cta-btn">Start Exploring →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ ONBOARDING TIPS MODAL ══ -->
+<div class="tips-overlay hidden" id="tips-overlay">
+  <div class="tips-modal">
+    <div class="tips-header">
+      <h2>🚀 Tips to Get Noticed</h2>
+      <p>Follow these tips to get 3× more profile views</p>
+    </div>
+    <div class="tips-list">
+      <div class="tip-item">
+        <div class="tip-icon">📸</div>
+        <div class="tip-text-wrap">
+          <div class="tip-title">Complete your profile first</div>
+          <div class="tip-desc">Profiles with a bio and interests get 3× more matches. Add at least 1 photo to unlock the Verified badge.</div>
+        </div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-icon">⚡</div>
+        <div class="tip-text-wrap">
+          <div class="tip-title">Use your free Daily Boost</div>
+          <div class="tip-desc">Every day you get 1 free boost — this puts your profile at the top of everyone's feed for 30 minutes.</div>
+        </div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-icon">🔗</div>
+        <div class="tip-text-wrap">
+          <div class="tip-title">Refer friends, earn more</div>
+          <div class="tip-desc">Share your referral link. Each friend who joins gives you 30 extra days of Premium + $15 credit.</div>
+        </div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-icon">🪪</div>
+        <div class="tip-text-wrap">
+          <div class="tip-title">Get Verified for more trust</div>
+          <div class="tip-desc">Upload your ID or a selfie to get the Verified badge. Verified profiles get 2× more connections.</div>
+        </div>
+      </div>
+    </div>
+    <button class="tips-btn" id="tips-done-btn">Got It — Let's Go! 🎯</button>
   </div>
 </div>
 
@@ -101,7 +205,7 @@
   <div class="sidebar-brand">
     <div class="sidebar-brand-icon">✦</div>
     <div>
-      <div class="sidebar-brand-name">Datemap</div>
+      <div class="sidebar-brand-name">Aiyashi</div>
       <div class="sidebar-brand-tag">Trust‑First Dating</div>
     </div>
   </div>
@@ -140,7 +244,7 @@
     <a href="#">Safety Center</a>
     <a href="#">Verification FAQ</a>
     <a href="#">Community Guidelines</a>
-    <div class="sidebar-copy">© 2026 Datemap Inc.</div>
+    <div class="sidebar-copy">© 2026 Aiyashi Inc.</div>
   </div>
 </nav>
 
@@ -186,6 +290,16 @@
       <!-- ── Center: Cards ── -->
       <div class="discover-center">
 
+        <!-- Earnings banner — shown only for female users via JS -->
+        <div class="earnings-banner" id="earnings-banner">
+          <div class="earnings-banner-icon">💵</div>
+          <div class="earnings-banner-text">
+            <div class="earnings-banner-title">Earn $100–$200 by connecting!</div>
+            <div class="earnings-banner-sub">Meet 5 Sugar Daddies and unlock real earnings potential</div>
+          </div>
+          <button class="earnings-banner-cta" onclick="document.getElementById('bnav-profile').click()">Learn More</button>
+        </div>
+
         <!-- Trust banner -->
         <div class="trust-banner">
           <span class="trust-banner-icon">🛡️</span>
@@ -195,6 +309,7 @@
         </div>
 
         <!-- ── Card Stack ── -->
+        <div id="cards-container">
         <div class="card-stack-wrap">
           <div class="card-shadow-2"></div>
           <div class="card-shadow-1"></div>
@@ -299,6 +414,7 @@
             </div>
           </div><!-- /card-sarah -->
         </div><!-- /card-stack-wrap -->
+        </div><!-- /cards-container -->
 
         <!-- ── Up Next row ── -->
         <div class="up-next-section">
@@ -359,7 +475,7 @@
         <div class="right-panel-card">
           <div class="rpc-header">
             <div class="rpc-icon rpc-icon-gold">⭐</div>
-            <div><div class="rpc-title">Datemap Gold</div><div class="rpc-sub">Unlock all premium features</div></div>
+            <div><div class="rpc-title">Aiyashi Gold</div><div class="rpc-sub">Unlock all premium features</div></div>
           </div>
           <div class="premium-feature-list">
             <div class="pf-row"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg><span>Unlimited Likes every day</span></div>
@@ -461,7 +577,7 @@
           <div class="matches-panel-body">
             <div class="matches-hero">
               <div class="matches-hero-title">Your Matches</div>
-              <div class="matches-hero-sub">Datemap verified · Photos unlock after matching</div>
+              <div class="matches-hero-sub">Aiyashi verified · Photos unlock after matching</div>
             </div>
 
             <div class="section-label">New Matches</div>
@@ -597,12 +713,95 @@
           <div class="setting-row"><div class="setting-left"><div class="setting-icon si-purple">📊</div><div class="setting-text"><div class="setting-label">Data &amp; Privacy</div><div class="setting-desc">Manage your data, download, or delete account</div></div></div><div class="setting-right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg></div></div>
         </div>
 
+        <!-- ── Earnings & Boost (females only) ── -->
+        <div class="profile-section" id="section-female-only" style="display:none">
+          <div class="profile-section-title">Earnings &amp; Rewards</div>
+
+          <!-- Daily Boost -->
+          <div class="boost-card">
+            <div class="boost-card-icon">⚡</div>
+            <div class="boost-card-text">
+              <div class="boost-card-title">Daily Profile Boost</div>
+              <div class="boost-card-sub" id="boost-status-text">Appear at the top of feeds for 30 min · 1 free per day</div>
+            </div>
+            <button class="boost-card-btn" id="boost-btn" onclick="useBoost()">Boost Now</button>
+          </div>
+
+          <!-- Earnings info -->
+          <div class="referral-card" style="background:linear-gradient(135deg,rgba(251,191,36,0.08),rgba(254,60,114,0.05));border-color:rgba(251,191,36,0.2)">
+            <div class="referral-title">💵 Earnings Potential</div>
+            <div class="referral-sub">Connect with Sugar Daddies and unlock real dollar rewards. Currently in beta — payouts launch soon!</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:10px;font-size:13px">
+                <span style="color:var(--text-secondary)">5 Connections</span>
+                <span style="font-weight:700;color:#FBD38D">$50 reward</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:10px;font-size:13px">
+                <span style="color:var(--text-secondary)">10 Connections</span>
+                <span style="font-weight:700;color:#FBD38D">$100 reward</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:10px;font-size:13px">
+                <span style="color:var(--text-secondary)">20 Connections</span>
+                <span style="font-weight:700;color:#FBD38D">$200 reward</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Referral Program ── -->
+        <div class="profile-section" id="section-referral" style="display:none">
+          <div class="profile-section-title">Refer &amp; Earn</div>
+          <div class="referral-card">
+            <div class="referral-title">🔗 Share Your Referral Link</div>
+            <div class="referral-sub">Each friend who joins gives you <strong style="color:#FBD38D">30 days free Premium + $15 credit</strong></div>
+            <div class="referral-link-wrap">
+              <input class="referral-link-input" id="referral-link-input" readonly value="Loading..." onclick="this.select()">
+              <button class="referral-copy-btn" onclick="copyReferral()">Copy</button>
+            </div>
+            <div class="referral-reward-note">
+              <span>🎁</span>
+              <span>Your friends also get <strong>$30 credit + Premium</strong> when they sign up!</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Verification Upload ── -->
+        <div class="profile-section">
+          <div class="profile-section-title">Identity Verification</div>
+          <div class="verify-card">
+            <div class="verify-title">🪪 Get Verified Badge</div>
+            <div class="verify-sub">Verified profiles get 2× more matches. Choose what to upload — we just need one.</div>
+            <div class="verify-options">
+              <div class="verify-opt" onclick="selectVerifyType('id')">
+                <div class="verify-opt-icon">🪪</div>
+                <div class="verify-opt-label">Gov. ID</div>
+              </div>
+              <div class="verify-opt" onclick="selectVerifyType('selfie')">
+                <div class="verify-opt-icon">🤳</div>
+                <div class="verify-opt-label">Selfie</div>
+              </div>
+              <div class="verify-opt" onclick="selectVerifyType('passport')">
+                <div class="verify-opt-icon">📘</div>
+                <div class="verify-opt-label">Passport</div>
+              </div>
+            </div>
+            <label class="verify-upload-area" for="verify-file-input">
+              <div class="verify-upload-icon">📤</div>
+              <div class="verify-upload-text" id="verify-upload-text">Tap to upload your document</div>
+              <input class="verify-upload-input" type="file" id="verify-file-input" accept="image/*,.pdf" onchange="handleVerifyUpload(this)">
+            </label>
+            <div id="verify-status" style="display:none">
+              <div class="verify-badge">⏳ Verification Pending Review</div>
+            </div>
+          </div>
+        </div>
+
         <div class="profile-section">
           <div class="profile-section-title">Support &amp; Legal</div>
           <div class="setting-row"><div class="setting-left"><div class="setting-icon si-red">📋</div><div class="setting-text"><div class="setting-label">Privacy Policy</div></div></div><div class="setting-right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg></div></div>
           <div class="setting-row"><div class="setting-left"><div class="setting-icon si-blue">📄</div><div class="setting-text"><div class="setting-label">Terms of Service</div></div></div><div class="setting-right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg></div></div>
           <div class="setting-row"><div class="setting-left"><div class="setting-icon si-green">🛡️</div><div class="setting-text"><div class="setting-label">Safety Center</div></div></div><div class="setting-right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg></div></div>
-          <div class="setting-row"><div class="setting-left"><div class="setting-icon si-amber">🚩</div><div class="setting-text"><div class="setting-label">Report a Profile</div><div class="setting-desc">Help keep Datemap safe for everyone</div></div></div><div class="setting-right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+          <div class="setting-row"><div class="setting-left"><div class="setting-icon si-amber">🚩</div><div class="setting-text"><div class="setting-label">Report a Profile</div><div class="setting-desc">Help keep Aiyashi safe for everyone</div></div></div><div class="setting-right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg></div></div>
         </div>
       </div>
     </div>
@@ -690,21 +889,108 @@ window.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('form-register')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name  = document.getElementById('reg-name').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const pw    = document.getElementById('reg-password').value;
+    const name         = document.getElementById('reg-name').value.trim();
+    const email        = document.getElementById('reg-email').value.trim();
+    const pw           = document.getElementById('reg-password').value;
+    const role         = document.querySelector('input[name="reg-role"]:checked')?.value || 'female';
+    const referralCode = document.getElementById('reg-referral').value.trim() || null;
     setAuthLoading('form-register', true);
     try {
       const { auth } = await import('./assets/js/api.js');
-      await auth.register(email, pw, name);
-      showAuthSuccess('Account created! Setting up your profile…');
-      setTimeout(() => location.reload(), 1200);
+      await auth.register(email, pw, name, role, referralCode);
+      if (role === 'female') {
+        // Show welcome modal for Sugar Babies
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('welcome-overlay').classList.remove('hidden');
+      } else {
+        showAuthSuccess('Account created! Setting up your profile…');
+        setTimeout(() => location.reload(), 1200);
+      }
     } catch (err) {
       showAuthError(err.message || 'Registration failed');
       setAuthLoading('form-register', false);
     }
   });
+
+  // Welcome modal → Tips → App
+  document.getElementById('welcome-cta-btn')?.addEventListener('click', () => {
+    document.getElementById('welcome-overlay').classList.add('hidden');
+    document.getElementById('tips-overlay').classList.remove('hidden');
+  });
+  document.getElementById('tips-done-btn')?.addEventListener('click', () => {
+    document.getElementById('tips-overlay').classList.add('hidden');
+    location.reload();
+  });
 });
+
+function selectRole(role) {
+  document.getElementById('role-female-label').classList.toggle('selected', role === 'female');
+  document.getElementById('role-male-label').classList.toggle('selected', role === 'male');
+  document.getElementById('role-hint-female').style.display = role === 'female' ? '' : 'none';
+  document.getElementById('role-hint-male').style.display   = role === 'male'   ? '' : 'none';
+  document.getElementById('reg-trust-female').style.display = role === 'female' ? '' : 'none';
+  document.getElementById('reg-trust-male').style.display   = role === 'male'   ? '' : 'none';
+  const btnText = document.querySelector('#btn-register .btn-text');
+  if (btnText) btnText.textContent = role === 'female' ? 'Sign Up Free — Get $30 Credit' : 'Create Account';
+}
+
+function copyReferral() {
+  const inp = document.getElementById('referral-link-input');
+  if (!inp) return;
+  inp.select();
+  navigator.clipboard.writeText(inp.value).then(() => {
+    const btn = document.querySelector('.referral-copy-btn');
+    if (btn) { btn.textContent = 'Copied! ✓'; setTimeout(() => btn.textContent = 'Copy', 2000); }
+  }).catch(() => {
+    document.execCommand('copy');
+  });
+}
+
+async function useBoost() {
+  const btn = document.getElementById('boost-btn');
+  if (!btn || btn.disabled) return;
+  btn.disabled = true;
+  btn.textContent = 'Boosting…';
+  try {
+    const { auth } = await import('./assets/js/api.js');
+    await auth.boost();
+    btn.textContent = 'Boosted! ⚡';
+    btn.style.opacity = '0.6';
+    const statusEl = document.getElementById('boost-status-text');
+    if (statusEl) statusEl.textContent = 'Profile boosted! Come back tomorrow for your next free boost.';
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = 'Boost Now';
+    const statusEl = document.getElementById('boost-status-text');
+    if (statusEl) statusEl.textContent = err.message || 'Could not boost right now. Try again later.';
+  }
+}
+
+function handleVerifyUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const uploadText = document.getElementById('verify-upload-text');
+  if (uploadText) uploadText.textContent = '✅ ' + file.name + ' — ready to submit';
+  const statusEl = document.getElementById('verify-status');
+  if (statusEl) statusEl.style.display = '';
+  // Upload to server (fire and forget)
+  const formData = new FormData();
+  formData.append('document', file);
+  import('./assets/js/api.js').then(({ auth }) => auth.uploadVerification(formData)).catch(() => {});
+}
+
+function selectVerifyType(type) {
+  document.querySelectorAll('.verify-opt').forEach(el => el.classList.remove('selected'));
+  const clicked = document.querySelector(`.verify-opt[onclick="selectVerifyType('${type}')"]`);
+  if (clicked) clicked.classList.add('selected');
+  const labels = {
+    id:       'Upload your Government ID photo',
+    selfie:   'Take or upload a clear selfie',
+    passport: 'Upload your Passport photo page',
+  };
+  const uploadText = document.getElementById('verify-upload-text');
+  if (uploadText) uploadText.textContent = labels[type] || 'Tap to upload';
+}
 </script>
 </body>
 </html>
