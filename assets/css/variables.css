@@ -1,0 +1,57 @@
+:root {
+  /* ── Backgrounds ── */
+  --bg-deep:        #0d0d18;
+  --bg-surface:     #131320;
+  --bg-card:        rgba(255,255,255,0.06);
+  --bg-card-hover:  rgba(255,255,255,0.10);
+  --bg-panel:       #1a1a2e;
+
+  /* ── Borders ── */
+  --border:         rgba(255,255,255,0.10);
+  --border-bright:  rgba(255,255,255,0.18);
+  --border-accent:  rgba(254,60,114,0.4);
+
+  /* ── Brand / Accent ── */
+  --tinder-red:     #FE3C72;
+  --tinder-orange:  #FF6036;
+  --tinder-grad:    linear-gradient(135deg, #FE3C72 0%, #FF6036 100%);
+  --accent-1:       #FE3C72;
+  --accent-2:       #FF6036;
+  --accent-blue:    #4f46e5;
+  --accent-purple:  #7c3aed;
+  --accent-rose:    #FE3C72;
+  --accent-warm:    #FF6036;
+
+  /* ── Text — HIGH CONTRAST ── */
+  --text-primary:   #FFFFFF;
+  --text-secondary: #CBD5E1;
+  --text-muted:     #94A3B8;
+  --text-faint:     #64748B;
+
+  /* ── Status ── */
+  --verified-green: #22C55E;
+  --gold:           #F59E0B;
+  --blue-info:      #38BDF8;
+
+  /* ── Carrier colors ── */
+  --carrier-vz:     #CD040B;
+  --carrier-tm:     #E20074;
+  --carrier-att:    #009FDB;
+  --carrier-sp:     #FFD700;
+
+  /* ── Geometry ── */
+  --radius-sm:      8px;
+  --radius-md:      14px;
+  --radius-lg:      20px;
+  --radius-xl:      28px;
+  --sidebar-width:  72px;
+  --right-width:    300px;
+
+  /* ── Shadows ── */
+  --shadow-card:    0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06);
+  --shadow-glow:    0 0 40px rgba(254,60,114,0.22);
+
+  /* ── Typography ── */
+  --font-body:      'Inter', sans-serif;
+  --font-display:   'Playfair Display', serif;
+}
