@@ -1315,23 +1315,41 @@ function deleteSavedCampaign(id) {
 }
 
 function renderSavedList() {
-  const list = getCampaigns();
+  const userList = getCampaigns().filter(c => !PRESET_CAMPAIGNS.find(p => p.id === c.id));
   const badge = document.getElementById('saved-count-badge');
-  if (badge) badge.textContent = list.length;
+  if (badge) badge.textContent = userList.length + PRESET_CAMPAIGNS.length;
   const el = document.getElementById('saved-list');
   if (!el) return;
-  if (!list.length) { el.innerHTML = '<div style="color:#555;font-size:13px">No saved campaigns yet.</div>'; return; }
-  el.innerHTML = list.map(c => `
-    <div class="saved-item">
+
+  const makeCard = (c, isPreset) => `
+    <div class="saved-item" style="${isPreset ? 'border-left:3px solid #C49A2A;' : ''}">
       <div class="saved-item-name">${esc(c.name)}</div>
-      <div class="saved-item-date">${c.savedAt||''}</div>
+      <div class="saved-item-date" style="color:${isPreset ? '#C49A2A' : '#555'}">${isPreset ? '⭐ Built-in' : (c.savedAt||'')}</div>
       <div class="saved-item-btns">
-        <button class="saved-item-btn" onclick="loadSavedCampaign(${c.id})">Load</button>
-        <button class="saved-item-btn" onclick="duplicateSavedCampaign(${c.id})">Duplicate</button>
-        <button class="saved-item-btn" style="color:#e55;border-color:#4a2a2a" onclick="deleteSavedCampaign(${c.id})">Delete</button>
+        <button class="saved-item-btn" onclick="loadPresetOrSaved(${c.id})">Load</button>
+        ${!isPreset ? `<button class="saved-item-btn" onclick="duplicateSavedCampaign(${c.id})">Copy</button>
+        <button class="saved-item-btn" style="color:#e55;border-color:#4a2a2a" onclick="deleteSavedCampaign(${c.id})">Delete</button>` : ''}
       </div>
-    </div>`).join('');
+    </div>`;
+
+  let html = '';
+  if (userList.length) {
+    html += `<div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.8px;margin:4px 0 8px">My Saved Campaigns</div>`;
+    html += userList.map(c => makeCard(c, false)).join('');
+    html += `<div style="border-top:1px solid #2a2a2a;margin:12px 0 8px"></div>`;
+  }
+  html += `<div style="font-size:10px;font-weight:700;color:#C49A2A;text-transform:uppercase;letter-spacing:.8px;margin:4px 0 8px">⭐ Sugar Baby Campaigns</div>`;
+  html += PRESET_CAMPAIGNS.map(c => makeCard(c, true)).join('');
+  el.innerHTML = html;
 }
+
+window.loadPresetOrSaved = function(id) {
+  // Check presets first
+  const preset = PRESET_CAMPAIGNS.find(c => c.id === id);
+  if (preset) { fillVisualFields(preset); setEditorMode('visual'); toggleSavedDrawer(false); return; }
+  // Then user saved
+  loadSavedCampaign(id);
+};
 
 function toggleSavedDrawer(force) {
   const drawer = document.getElementById('saved-drawer');
@@ -1638,6 +1656,9 @@ function seedPresetCampaigns() {
 function initCampaignTab() {
   seedPresetCampaigns();
   renderSavedList();
+  // Always open the drawer so campaigns are immediately visible
+  const drawer = document.getElementById('saved-drawer');
+  if (drawer) drawer.style.display = 'block';
   if (!_campaignTabInited) {
     _campaignTabInited = true;
     // Auto-load the gift invite template so preview is immediately visible
