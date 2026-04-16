@@ -154,8 +154,16 @@
   .cmp-topbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; padding:14px 18px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px; }
   .cmp-topbar-left { display:flex; align-items:center; gap:10px; flex:1; flex-wrap:wrap; }
   .cmp-topbar-right { display:flex; gap:8px; }
-  .cmp-layout { display:grid; grid-template-columns:1fr 360px; gap:16px; }
-  @media(max-width:960px){ .cmp-layout{ grid-template-columns:1fr; } }
+  .cmp-layout { display:grid; grid-template-columns:1fr 480px 320px; gap:16px; align-items:start; }
+  @media(max-width:1300px){ .cmp-layout{ grid-template-columns:1fr 420px 300px; } }
+  @media(max-width:1050px){ .cmp-layout{ grid-template-columns:1fr 360px; } }
+  @media(max-width:1050px){ .cmp-preview-col{ display:none; } }
+  @media(max-width:760px){ .cmp-layout{ grid-template-columns:1fr; } }
+  .cmp-preview-sticky { position:sticky; top:70px; }
+  .cmp-preview-col { }
+  /* inline preview strip below builder on small screens */
+  .cmp-preview-inline { display:none; }
+  @media(max-width:1050px){ .cmp-preview-inline{ display:block; } }
   .cmp-card { background:#1a1a1a; border:1px solid #2a2a2a; border-radius:12px; padding:18px; margin-bottom:14px; }
   .cmp-card-title { font-size:14px; font-weight:700; color:#C49A2A; margin-bottom:14px; }
   .cmp-field { margin-bottom:14px; }
@@ -359,7 +367,7 @@
   <!-- ── Main layout ── -->
   <div class="cmp-layout">
 
-    <!-- LEFT: Builder -->
+    <!-- COL 1: Builder -->
     <div>
       <div class="cmp-card">
 
@@ -450,25 +458,29 @@
 
       </div><!-- /compose card -->
 
-      <!-- ── Live Preview ── -->
-      <div class="cmp-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div class="cmp-card-title" style="margin:0">👁 Live Preview</div>
-          <div class="cmp-pills">
-            <button class="cmp-pill active" data-val="desktop" onclick="setPreviewWidth('100%',this)">🖥 Desktop</button>
-            <button class="cmp-pill" data-val="mobile" onclick="setPreviewWidth('375px',this)">📱 Mobile</button>
+    </div><!-- /col 1 builder -->
+
+    <!-- COL 2: Live Preview (always visible, sticky) -->
+    <div class="cmp-preview-col">
+      <div class="cmp-preview-sticky">
+        <div class="cmp-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div class="cmp-card-title" style="margin:0">👁 Live Preview</div>
+            <div class="cmp-pills">
+              <button class="cmp-pill active" data-val="desktop" onclick="setPreviewWidth('100%',this)">🖥 Desktop</button>
+              <button class="cmp-pill" data-val="mobile" onclick="setPreviewWidth('375px',this)">📱 Mobile</button>
+            </div>
           </div>
-        </div>
-        <div style="background:#f0ede8;border-radius:8px;padding:12px;overflow:auto">
-          <div id="preview-wrap" style="margin:0 auto;transition:max-width .3s;max-width:100%">
-            <iframe id="preview-iframe-live" style="width:100%;height:520px;border:none;border-radius:6px;background:#fff" sandbox="allow-same-origin"></iframe>
+          <div style="background:#f0ede8;border-radius:8px;padding:10px;overflow:auto">
+            <div id="preview-wrap" style="margin:0 auto;transition:max-width .3s;max-width:100%">
+              <iframe id="preview-iframe-live" style="width:100%;height:640px;border:none;border-radius:6px;background:#fff" sandbox="allow-same-origin allow-scripts"></iframe>
+            </div>
           </div>
         </div>
       </div>
+    </div><!-- /col 2 preview -->
 
-    </div><!-- /left col -->
-
-    <!-- RIGHT: Recipients + Send -->
+    <!-- COL 3: Recipients + Send -->
     <div>
       <div class="cmp-card">
         <div class="cmp-card-title">📋 Recipients</div>
@@ -1207,19 +1219,6 @@ const TEMPLATE_DATA = {
   custom: { subject:'', theme:'dark', audience:'all', headline:'', opening:'', benefits:[], ctaText:'', ctaUrl:'https://aiyashi.vip', closing:'' }
 };
 
-function loadTemplate(key) {
-  const d = TEMPLATE_DATA[key];
-  if (!d) return;
-  fillVisualFields(d);
-  setEditorMode('visual');
-  // Reset state
-  validEmails = [];
-  document.getElementById('recipient-count').textContent = '0 recipients';
-  document.getElementById('recipient-preview').style.display = 'none';
-  document.getElementById('campaign-result').style.display  = 'none';
-  document.getElementById('campaign-progress').style.display = 'none';
-}
-
 function fillVisualFields(d) {
   document.getElementById('cmp-subject').value   = d.subject  || '';
   document.getElementById('vb-headline').value   = d.headline || '';
@@ -1347,11 +1346,6 @@ function newCampaign() {
   document.getElementById('cmp-subject').value = '';
   document.getElementById('cmp-template').value = '';
   setEditorMode('visual');
-}
-
-function initCampaignTab() {
-  renderSavedList();
-  livePreview();
 }
 
 /* ── Email Templates ── */
@@ -1547,22 +1541,138 @@ const EMAIL_TEMPLATES = {
 };
 
 let validEmails = [];
+let _campaignTabInited = false;
+
+/* ── Pre-built sugar baby campaigns — seeded once into localStorage ── */
+const PRESET_CAMPAIGNS = [
+  {
+    id: 10001, name: '💛 Sugar Baby — $30 Gift Invite', savedAt: 'Preset',
+    mode: 'visual', theme: 'dark', audience: 'women',
+    subject: "🎀 Your $30 Gift Card is Reserved — Join Aiyashi Free Today",
+    headline: "We've Reserved a $30 Gift Card for You 🎀",
+    opening: "You've been personally selected to receive an exclusive $30 gift card — completely free, no credit card needed — when you join Aiyashi today.\n\nAiyashi is India's premier platform connecting genuine, elegant women with successful, generous men across the USA. Your gift card is waiting — but this offer is only valid for the next 48 hours.",
+    benefits: [
+      { icon:'🎁', title:'$30 Gift Card — Free, No Card Needed', desc:'Credited instantly to your Aiyashi wallet the moment you complete your profile.' },
+      { icon:'⭐', title:'30 Days Premium Membership — Free',    desc:'Unlimited likes, see who viewed your profile, zero ads for a full month.' },
+      { icon:'💬', title:'Unlimited Messaging from Day One',     desc:'Chat freely with all your matches — no waiting, no limits.' },
+      { icon:'🔒', title:'Verified, Genuine Members Only',       desc:'Every man on Aiyashi is identity-verified. No fake profiles, no bots.' },
+      { icon:'💵', title:'Earn Cash Rewards Up to $200',         desc:'Connect with 5+ matches and unlock real cash rewards sent directly to you.' },
+    ],
+    ctaText: 'Claim My $30 Gift Card — Join Free ✦', ctaUrl: 'https://aiyashi.vip?promo=gift30&src=email_giw',
+    closing: 'Your $30 gift card is reserved under this email address and will be applied automatically when you sign up.\n\n⏰ This offer expires in 48 hours — don\'t miss out.\n\nWith warmth,\n— The Aiyashi Team 💛'
+  },
+  {
+    id: 10002, name: '🌹 Sugar Baby — Exclusive Invite (Rose)', savedAt: 'Preset',
+    mode: 'visual', theme: 'rose', audience: 'women',
+    subject: "💛 You're Invited: Get $30 Free + Find Your Perfect Match on Aiyashi",
+    headline: "You're Invited 💛",
+    opening: "We've handpicked you for an exclusive invitation to Aiyashi — India's premier platform connecting successful, generous men with genuine, elegant women across the USA.\n\nJoin today and receive these exclusive benefits — completely free, no card needed:",
+    benefits: [
+      { icon:'💰', title:'$30 Free Credit — Instantly',     desc:'Added to your wallet the moment you sign up. Use for boosts & super likes.' },
+      { icon:'⭐', title:'30 Days Premium — Free',           desc:'Unlimited likes, see who viewed your profile, zero ads — for a full month.' },
+      { icon:'💵', title:'Earn Up to $200 in Rewards',      desc:'Connect with 5+ Sugar Daddies and unlock real cash rewards sent to you directly.' },
+      { icon:'🔒', title:'100% Verified Men',               desc:'Every Sugar Daddy is identity-verified before they can message you.' },
+    ],
+    ctaText: 'Join Free — Claim Your $30 Credit ✦', ctaUrl: 'https://aiyashi.vip?src=email_sb',
+    closing: 'Thousands of verified, successful men are already waiting to meet someone like you.\nEvery profile is verified — no fake profiles, no bots, no wasted time.\n\n— The Aiyashi Team 💛'
+  },
+  {
+    id: 10003, name: '👋 Sugar Baby — Welcome Onboarding', savedAt: 'Preset',
+    mode: 'visual', theme: 'light', audience: 'women',
+    subject: "💛 Welcome to Aiyashi — Here's how to get your first match",
+    headline: "Welcome to Aiyashi 💛",
+    opening: "We're so glad you're here.\n\nAiyashi is a curated community connecting genuine, elegant women with successful, generous men. Unlike other apps, every member is verified and every match is intentional.\n\nHere's how to get the most out of Aiyashi from day one:",
+    benefits: [
+      { icon:'📸', title:'Step 1 — Add Your Best Photos',   desc:'Upload 3–5 clear, well-lit photos. Profiles with photos get 5× more matches.' },
+      { icon:'✍️', title:'Step 2 — Write Your Bio',         desc:'Tell us about yourself — your passions, lifestyle and what you\'re looking for.' },
+      { icon:'🔍', title:'Step 3 — Browse & Like',          desc:'Swipe through curated profiles. Like the ones that catch your eye.' },
+      { icon:'💬', title:'Step 4 — Start a Conversation',  desc:'When it\'s a mutual match, send the first message. Keep it genuine and warm.' },
+    ],
+    ctaText: 'Complete My Profile Now ✦', ctaUrl: 'https://aiyashi.vip/profile/edit?src=email_wc',
+    closing: 'If you ever need help, just reply to this email — a real person will respond within 24 hours.\n\nWishing you wonderful connections,\n— The Aiyashi Team 💛'
+  },
+  {
+    id: 10004, name: '🔥 Sugar Baby — Re-engagement', savedAt: 'Preset',
+    mode: 'visual', theme: 'rose', audience: 'women',
+    subject: "We miss you 💛 — New matches are waiting for you on Aiyashi",
+    headline: "We've missed you! 💛",
+    opening: "It's been a while since we've seen you on Aiyashi — and a lot has changed!\n\nNew verified, successful men have joined since your last visit. Some of them may be a perfect match for you — but they can't find you if you're not there.",
+    benefits: [
+      { icon:'🔥', title:'New Members This Week',           desc:'Hundreds of verified, successful men have joined since your last visit.' },
+      { icon:'💬', title:'Messages Waiting',                desc:'You may have unread messages from men who liked your profile already.' },
+      { icon:'⭐', title:'Your Premium is Still Active',    desc:'Log back in to continue enjoying all Premium features — they\'re waiting for you.' },
+      { icon:'🎁', title:'Come Back Bonus',                 desc:'Log back in today and receive a free Profile Boost + 5 Super Likes.' },
+    ],
+    ctaText: 'See Who\'s New — Log Back In ✦', ctaUrl: 'https://aiyashi.vip?src=email_re',
+    closing: 'Your profile and all your matches are still safely saved. Just log in to pick up where you left off.\n\n— The Aiyashi Team 💛'
+  },
+  {
+    id: 10005, name: '🌏 Sugar Baby — NRI / Desi Women', savedAt: 'Preset',
+    mode: 'visual', theme: 'dark', audience: 'women',
+    subject: "🌏 Aiyashi — Find Your Perfect Desi Match in the USA, UK & Canada",
+    headline: "Your Desi Match is Waiting 🌏",
+    opening: "Living abroad shouldn't mean compromising on love. Aiyashi is built for the Indian diaspora — connecting successful NRI men with genuine, culturally-rooted women across the USA, UK, Canada and Australia.\n\nJoin today with exclusive benefits — completely free:",
+    benefits: [
+      { icon:'🇮🇳', title:'Verified NRI & Indian Community',  desc:'Thousands of Indian-origin members across the US, UK, Canada & Australia.' },
+      { icon:'💼', title:'Successful, Career-Driven Men',    desc:'Meet doctors, engineers, entrepreneurs who share your values and ambitions.' },
+      { icon:'🎁', title:'$30 Free Credit on Signup',        desc:'Added to your wallet instantly when you complete your profile. No card needed.' },
+      { icon:'🔒', title:'Fully Private & Discreet',         desc:'Your profile is never visible to colleagues or family — you control everything.' },
+    ],
+    ctaText: 'Find My Desi Match — Join Free ✦', ctaUrl: 'https://aiyashi.vip?src=email_nri_f',
+    closing: 'Whether you\'re looking for something serious or simply open to meeting the right person — Aiyashi gives you a private, elegant space to do it.\n\nWith warm regards,\n— The Aiyashi Team 🌏'
+  },
+];
+
+function seedPresetCampaigns() {
+  try {
+    const existing = JSON.parse(localStorage.getItem('aiyashi_campaigns') || '[]');
+    const existingIds = new Set(existing.map(c => c.id));
+    const toAdd = PRESET_CAMPAIGNS.filter(p => !existingIds.has(p.id));
+    if (toAdd.length) {
+      const merged = [...existing, ...toAdd];
+      localStorage.setItem('aiyashi_campaigns', JSON.stringify(merged));
+    }
+  } catch(e) {}
+}
 
 function initCampaignTab() {
-  // nothing to init on first open
+  seedPresetCampaigns();
+  renderSavedList();
+  if (!_campaignTabInited) {
+    _campaignTabInited = true;
+    // Auto-load the gift invite template so preview is immediately visible
+    loadTemplate('gift_invite_women');
+  } else {
+    livePreview();
+  }
 }
 
 function loadTemplate(key) {
+  // Visual builder templates
+  const d = TEMPLATE_DATA[key];
+  if (d) {
+    fillVisualFields(d);
+    setEditorMode('visual');
+    validEmails = [];
+    document.getElementById('recipient-count').textContent = '0 recipients';
+    document.getElementById('recipient-preview').style.display = 'none';
+    document.getElementById('campaign-result').style.display   = 'none';
+    document.getElementById('campaign-progress').style.display = 'none';
+    return;
+  }
+  // Legacy HTML-only templates
   const tpl = EMAIL_TEMPLATES[key];
-  if (!tpl) return;
-  document.getElementById('cmp-subject').value = tpl.subject || '';
-  document.getElementById('cmp-body').value    = tpl.html    || '';
-  // Reset state
-  validEmails = [];
-  document.getElementById('recipient-count').textContent = '0 recipients';
-  document.getElementById('recipient-preview').style.display = 'none';
-  document.getElementById('campaign-result').style.display  = 'none';
-  document.getElementById('campaign-progress').style.display = 'none';
+  if (tpl) {
+    document.getElementById('cmp-subject').value = tpl.subject || '';
+    setEditorMode('html');
+    document.getElementById('cmp-body').value = tpl.html || '';
+    livePreview();
+    validEmails = [];
+    document.getElementById('recipient-count').textContent = '0 recipients';
+    document.getElementById('recipient-preview').style.display = 'none';
+    document.getElementById('campaign-result').style.display   = 'none';
+    document.getElementById('campaign-progress').style.display = 'none';
+  }
 }
 
 function parseRecipients() {
