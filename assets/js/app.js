@@ -491,7 +491,7 @@ function makeActivityCard(person, onclick = '') {
 async function loadActivity() {
   try {
     const res = await fetch('/api/profiles/activity', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
     });
     if (!res.ok) throw new Error('Failed');
     const data = await res.json();
