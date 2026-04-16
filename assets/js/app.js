@@ -457,7 +457,7 @@ window.messageFromModal = async function() {
       return;
     }
 
-    // Try to like/match
+    // Like them and wait to see if it's a mutual match
     const result = await swipes.swipe(p.id, 'like');
     loadMatches();
 
@@ -465,14 +465,29 @@ window.messageFromModal = async function() {
       openFloatingChat(result.match_id, p);
       if (result.match) showMatchCelebration(result, p);
     } else {
-      showInlineToast(`❤️ Liked! You'll be notified when ${p.display_name || 'they'} matches back.`);
+      showInlineToast(`💬 Interest sent to ${p.display_name || 'them'}! You'll be able to chat when they match back.`);
     }
   } catch (err) {
-    showInlineToast('❤️ Already liked! Waiting for their response.');
+    showInlineToast(`💬 You already sent interest to ${modalProfile?.display_name || 'them'} — chat opens when they match back.`);
   }
 };
 
 // ── Activity screen ───────────────────────────────────────────────
+function makeActivityCard(person, onclick = '') {
+  const photo = person.photos?.[0] ? `/uploads/${person.photos[0]}` : null;
+  const name  = escapeHtml(person.display_name || 'Member');
+  return `<div class="activity-card" style="${onclick ? 'cursor:pointer' : ''}" ${onclick ? `onclick="${onclick}"` : ''}>
+    <div class="activity-card-photo">
+      ${photo ? `<img src="${photo}" alt="${name}">` : '<div class="activity-card-ph">👤</div>'}
+    </div>
+    <div class="activity-card-info">
+      <div class="activity-card-name">${name}</div>
+      <div class="activity-card-meta">${person.age || ''}${person.location_text ? ` · ${escapeHtml(person.location_text)}` : ''}</div>
+    </div>
+    <div class="activity-card-time">${timeAgo(person.created_at)}</div>
+  </div>`;
+}
+
 async function loadActivity() {
   try {
     const res = await fetch('/api/profiles/activity', {
@@ -481,55 +496,39 @@ async function loadActivity() {
     if (!res.ok) throw new Error('Failed');
     const data = await res.json();
 
-    // Render likes
+    // ❤️ Liked You tab — people who liked me
     const likesEl = document.getElementById('activity-likes');
     if (likesEl) {
-      if (!data.likes?.length) {
-        likesEl.innerHTML = '<div class="activity-empty">No likes yet — keep browsing!</div>';
-      } else {
-        likesEl.innerHTML = data.likes.map(l => {
-          const photo = l.photos?.[0] ? `/uploads/${l.photos[0]}` : null;
-          return `<div class="activity-card" onclick="">
-            <div class="activity-card-photo">
-              ${photo ? `<img src="${photo}" alt="${escapeHtml(l.display_name||'')}">` : '<div class="activity-card-ph">👤</div>'}
-            </div>
-            <div class="activity-card-info">
-              <div class="activity-card-name">${escapeHtml(l.display_name || 'Member')}</div>
-              <div class="activity-card-meta">${l.age ? `${l.age}` : ''}${l.location_text ? ` · ${escapeHtml(l.location_text)}` : ''}</div>
-            </div>
-            <div class="activity-card-time">${timeAgo(l.created_at)}</div>
-          </div>`;
-        }).join('');
-      }
+      likesEl.innerHTML = data.likes?.length
+        ? data.likes.map(l => makeActivityCard(l)).join('')
+        : '<div class="activity-empty">No one has liked you yet — keep browsing to get noticed!</div>';
     }
 
-    // Render matches
+    // 👋 You Liked tab — people I swiped right on
+    const sentEl = document.getElementById('activity-sent');
+    if (sentEl) {
+      sentEl.innerHTML = data.likesSent?.length
+        ? data.likesSent.map(l => makeActivityCard(l)).join('')
+        : '<div class="activity-empty">You haven\'t liked anyone yet — start browsing!</div>';
+    }
+
+    // 🤝 Matches tab
     const matchesEl = document.getElementById('activity-matches');
     if (matchesEl) {
       if (!data.matches?.length) {
-        matchesEl.innerHTML = '<div class="activity-empty">No matches yet — start swiping!</div>';
+        matchesEl.innerHTML = '<div class="activity-empty">No matches yet — when someone likes you back, they\'ll appear here!</div>';
       } else {
         matchesEl.innerHTML = data.matches.map(m => {
-          const photo = m.photos?.[0] ? `/uploads/${m.photos[0]}` : null;
           const safeId   = String(m.match_id).replace(/[^a-zA-Z0-9-]/g, '');
           const safeName = escapeHtml(m.display_name || 'Match');
-          return `<div class="activity-card" style="cursor:pointer" onclick="openMatchFromActivity('${safeId}','${safeName}')">
-            <div class="activity-card-photo">
-              ${photo ? `<img src="${photo}" alt="${safeName}">` : '<div class="activity-card-ph">👤</div>'}
-            </div>
-            <div class="activity-card-info">
-              <div class="activity-card-name">${safeName}</div>
-              <div class="activity-card-meta">${m.age ? `${m.age}` : ''}${m.location_text ? ` · ${escapeHtml(m.location_text)}` : ''}</div>
-            </div>
-            <div class="activity-card-time">${timeAgo(m.created_at)}</div>
-          </div>`;
+          return makeActivityCard({ ...m, display_name: safeName }, `openMatchFromActivity('${safeId}','${safeName}')`);
         }).join('');
       }
     }
   } catch (err) {
     console.error('Activity error:', err);
     const likesEl = document.getElementById('activity-likes');
-    if (likesEl) likesEl.innerHTML = '<div class="activity-empty">Could not load activity.</div>';
+    if (likesEl) likesEl.innerHTML = '<div class="activity-empty">Could not load activity. Please try again.</div>';
   }
 }
 
@@ -547,15 +546,39 @@ window.openMatchFromActivity = function(matchId, name) {
 window.switchActivityTab = function(btn, tab) {
   document.querySelectorAll('.activity-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('activity-likes')?.classList.toggle('hidden', tab !== 'likes');
+  document.getElementById('activity-likes')?.classList.toggle('hidden',   tab !== 'likes');
+  document.getElementById('activity-sent')?.classList.toggle('hidden',    tab !== 'sent');
   document.getElementById('activity-matches')?.classList.toggle('hidden', tab !== 'matches');
 };
 
 // ── Settings panel (stub) ─────────────────────────────────────────
 window.showSettingsPanel = function(type) {
   showInlineToast(`⚙️ ${type.charAt(0).toUpperCase() + type.slice(1)} settings — Coming soon!`);
-  // Close menu
   document.getElementById('app-nav-user-menu')?.classList.add('hidden');
+};
+
+// ── Credit / Wallet modal ─────────────────────────────────────────
+window.openCreditModal = function() {
+  const user = currentUser.get();
+  const bal  = document.getElementById('credit-modal-balance');
+  if (bal) bal.textContent = `$${user?.credit_balance || 0}`;
+  const el = document.getElementById('credit-modal-backdrop');
+  if (el) { el.style.display = 'flex'; }
+};
+window.closeCreditModal = function() {
+  const el = document.getElementById('credit-modal-backdrop');
+  if (el) el.style.display = 'none';
+};
+
+// ── Support modal ─────────────────────────────────────────────────
+window.openSupportEmail = function() {
+  document.getElementById('app-nav-user-menu')?.classList.add('hidden');
+  const el = document.getElementById('support-modal-backdrop');
+  if (el) { el.style.display = 'flex'; }
+};
+window.closeSupportModal = function() {
+  const el = document.getElementById('support-modal-backdrop');
+  if (el) el.style.display = 'none';
 };
 
 // ── Grid swipe ────────────────────────────────────────────────────
@@ -647,8 +670,8 @@ function renderMatchesList(list) {
   if (navBadge)  { navBadge.textContent  = unread || ''; navBadge.classList.toggle('hidden',  !unread); }
   if (mnavBadge) { mnavBadge.textContent = unread || ''; mnavBadge.classList.toggle('hidden', !unread); }
 
-  if (!list.length) {
-    convList.innerHTML = `<div style="padding:48px 24px;text-align:center;color:#9C8878;font-size:13px;line-height:1.6">💛<br><br>No matches yet.<br>Keep browsing to find your connection!</div>`;
+  if (!list || !list.length) {
+    convList.innerHTML = `<div style="padding:48px 24px;text-align:center;color:#9C8878;font-size:13px;line-height:1.8">💛<br><br><strong style="color:#5a4a3a">No matches yet.</strong><br>Like profiles and wait for them to like you back<br>— matches appear here instantly!</div>`;
     return;
   }
 

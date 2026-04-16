@@ -287,22 +287,34 @@ router.get('/discover', authenticate, async (req, res) => {
 });
 
 // ── GET /api/profiles/activity ────────────────────────────────────
-// Returns recent likes received and recent matches for the current user
+// Returns: likesReceived (people who liked me), likesSent (people I liked), matches
 router.get('/activity', authenticate, async (req, res) => {
   try {
-    // Likes: up to 20 most recent swipes where swiped_id = current user
-    const { rows: likes } = await query(
+    // Likes received: people who swiped right on me
+    const { rows: likesReceived } = await query(
       `SELECT s.swiper_id AS id, s.action, s.created_at,
               p.display_name, p.photos, p.age, p.location_text
        FROM swipes s
        JOIN profiles p ON p.user_id = s.swiper_id
        WHERE s.swiped_id = $1 AND s.action IN ('like','super')
        ORDER BY s.created_at DESC
-       LIMIT 20`,
+       LIMIT 30`,
       [req.user.id]
     );
 
-    // Matches: up to 10 recent matches
+    // Likes sent: people I swiped right on
+    const { rows: likesSent } = await query(
+      `SELECT s.swiped_id AS id, s.action, s.created_at,
+              p.display_name, p.photos, p.age, p.location_text
+       FROM swipes s
+       JOIN profiles p ON p.user_id = s.swiped_id
+       WHERE s.swiper_id = $1 AND s.action IN ('like','super')
+       ORDER BY s.created_at DESC
+       LIMIT 30`,
+      [req.user.id]
+    );
+
+    // Matches
     const { rows: matchRows } = await query(
       `SELECT m.id AS match_id, m.created_at,
               CASE WHEN m.user1_id = $1 THEN m.user2_id ELSE m.user1_id END AS partner_id,
@@ -311,11 +323,11 @@ router.get('/activity', authenticate, async (req, res) => {
        JOIN profiles p ON p.user_id = CASE WHEN m.user1_id = $1 THEN m.user2_id ELSE m.user1_id END
        WHERE (m.user1_id = $1 OR m.user2_id = $1) AND m.unmatched_by IS NULL
        ORDER BY m.created_at DESC
-       LIMIT 10`,
+       LIMIT 20`,
       [req.user.id]
     );
 
-    res.json({ likes, matches: matchRows });
+    res.json({ likes: likesReceived, likesSent, matches: matchRows });
   } catch (err) {
     console.error('Activity error:', err);
     res.status(500).json({ error: 'Failed to load activity' });

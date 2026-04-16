@@ -399,6 +399,7 @@
             <button class="anm-item" onclick="showSettingsPanel('notifications')">🔔 Notifications</button>
             <button class="anm-item" onclick="showSettingsPanel('language')">🌐 Select Language</button>
             <button class="anm-item" onclick="showSettingsPanel('help')">❓ Help</button>
+            <button class="anm-item" onclick="openSupportEmail()">📧 Contact Support</button>
             <button class="anm-item anm-upgrade" onclick="showSettingsPanel('upgrade')">⭐ Upgrade Membership</button>
             <div class="anm-divider"></div>
             <button class="anm-item anm-logout" onclick="doLogout()">🚪 Logout</button>
@@ -535,9 +536,7 @@
           <div class="conv-search-wrap">
             <input class="conv-search" type="text" placeholder="🔍 Search conversations...">
           </div>
-          <div class="conv-list" id="conv-list">
-            <div style="padding:32px 16px;text-align:center;color:#9C8878;font-size:13px">No matches yet — start browsing!</div>
-          </div>
+          <div class="conv-list" id="conv-list"></div>
         </div>
 
         <!-- Chat panel -->
@@ -579,15 +578,13 @@
           <h2>Activity</h2>
         </div>
         <div class="activity-tabs">
-          <button class="activity-tab active" onclick="switchActivityTab(this,'likes')">❤️ Likes</button>
+          <button class="activity-tab active" onclick="switchActivityTab(this,'likes')">❤️ Liked You</button>
+          <button class="activity-tab" onclick="switchActivityTab(this,'sent')">👋 You Liked</button>
           <button class="activity-tab" onclick="switchActivityTab(this,'matches')">🤝 Matches</button>
         </div>
-        <div class="activity-list" id="activity-likes">
-          <div class="activity-empty">Loading...</div>
-        </div>
-        <div class="activity-list hidden" id="activity-matches">
-          <div class="activity-empty">Loading...</div>
-        </div>
+        <div class="activity-list" id="activity-likes"></div>
+        <div class="activity-list hidden" id="activity-sent"></div>
+        <div class="activity-list hidden" id="activity-matches"></div>
       </div>
     </div>
 
@@ -606,7 +603,7 @@
             <div class="pp-meta" id="pp-meta">Member since 2026</div>
             <div class="pp-badges" id="pp-badges"></div>
           </div>
-          <div class="pp-credit-badge hidden" id="pp-credit-badge">
+          <div class="pp-credit-badge hidden" id="pp-credit-badge" onclick="openCreditModal()" title="View your credit balance" style="cursor:pointer">
             <span class="pp-credit-icon">💰</span>
             <span class="pp-credit-val" id="pp-credit-val">$30 Credit</span>
           </div>
@@ -1205,6 +1202,54 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CREDIT / WALLET MODAL
+═══════════════════════════════════════════════════════════════ -->
+<div id="credit-modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:800;align-items:center;justify-content:center" onclick="closeCreditModal()">
+  <div style="background:#fff;border-radius:20px;max-width:400px;width:90%;padding:32px;position:relative;text-align:center" onclick="event.stopPropagation()">
+    <button onclick="closeCreditModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#999">✕</button>
+    <div style="font-size:40px;margin-bottom:12px">💰</div>
+    <h2 style="font-size:22px;color:#1A0A05;margin-bottom:6px">Your Wallet</h2>
+    <div style="font-size:36px;font-weight:700;color:#C49A2A;margin:12px 0" id="credit-modal-balance">$0</div>
+    <p style="font-size:13px;color:#9C8878;margin-bottom:24px">Credits are used for Profile Boosts, Super Likes, and premium features.</p>
+    <div style="background:#faf5ee;border-radius:12px;padding:16px;text-align:left;margin-bottom:20px">
+      <div style="font-size:13px;font-weight:600;color:#1A0A05;margin-bottom:10px">How to use credits</div>
+      <div style="font-size:13px;color:#5a4a3a;line-height:1.8">
+        ⚡ <strong>Profile Boost</strong> — 1 free/day, or spend credits for extra boosts<br>
+        ⭐ <strong>Super Like</strong> — Stand out when you like someone's profile<br>
+        🚀 <strong>Premium Features</strong> — Unlock advanced filters &amp; more<br>
+        💵 <strong>Earn more</strong> — Refer friends to earn $15 credit each
+      </div>
+    </div>
+    <button onclick="closeCreditModal();navigate('profile')" style="width:100%;padding:14px;background:linear-gradient(135deg,#C49A2A,#E8C060);color:#fff;border:none;border-radius:50px;font-size:15px;font-weight:700;cursor:pointer">View My Profile ✦</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SUPPORT MODAL
+═══════════════════════════════════════════════════════════════ -->
+<div id="support-modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:800;align-items:center;justify-content:center" onclick="closeSupportModal()">
+  <div style="background:#fff;border-radius:20px;max-width:420px;width:90%;padding:32px;position:relative" onclick="event.stopPropagation()">
+    <button onclick="closeSupportModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#999">✕</button>
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:40px;margin-bottom:8px">📧</div>
+      <h2 style="font-size:20px;color:#1A0A05">Contact Support</h2>
+      <p style="font-size:13px;color:#9C8878;margin-top:6px">We typically respond within 24 hours.</p>
+    </div>
+    <div style="background:#faf5ee;border-radius:12px;padding:16px;margin-bottom:20px">
+      <div style="font-size:13px;color:#5a4a3a;line-height:2">
+        📬 <strong>Email:</strong> <a href="mailto:info@aiyashi.vip" style="color:#C49A2A;text-decoration:none">info@aiyashi.vip</a><br>
+        ⏰ <strong>Response time:</strong> Within 24 hours<br>
+        🕐 <strong>Support hours:</strong> Mon–Fri, 9am–6pm EST
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <a href="mailto:info@aiyashi.vip?subject=Support Request — Aiyashi" style="flex:1;display:block;padding:14px;background:linear-gradient(135deg,#C49A2A,#E8C060);color:#fff;border:none;border-radius:50px;font-size:14px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none">📧 Send Email ✦</a>
+      <button onclick="closeSupportModal()" style="flex:1;padding:14px;background:#f0e8d8;color:#5a4a3a;border:none;border-radius:50px;font-size:14px;font-weight:600;cursor:pointer">Cancel</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
