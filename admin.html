@@ -314,6 +314,8 @@
           <option value="sugar_baby">💛 Invite — Women (Sugar Baby)</option>
           <option value="sugar_daddy">💎 Invite — Men (Sugar Daddy)</option>
           <option value="nri_invite">🌏 Invite — NRI / Indian Diaspora</option>
+          <option value="gift_invite_women">🎀 Invite Women — $30 Gift Card</option>
+          <option value="gift_invite_men">🎁 Invite Men — $30 Gift Card</option>
           <option value="referral">🎁 Referral — Invite a Friend</option>
         </optgroup>
         <optgroup label="🔄 Retention & Re-engagement">
@@ -1052,6 +1054,41 @@ const TEMPLATE_DATA = {
     ctaUrl:  'https://aiyashi.vip?src=email_re',
     closing: 'Your profile and all your matches are still safely saved. Just log in to pick up where you left off.\n\n— The Aiyashi Team 💛'
   },
+  /* ── Gift Card Invites ── */
+  gift_invite_women: {
+    subject: "🎀 Your $30 Gift Card is Reserved — Join Aiyashi Free Today",
+    theme: 'rose', audience: 'women',
+    headline: "We've Reserved a $30 Gift Card for You 🎀",
+    opening: "You've been personally selected to receive an exclusive $30 gift card — completely free, no credit card needed — when you join Aiyashi today.\n\nAiyashi is India's premier platform connecting genuine, elegant women with successful, generous men across the USA. Your gift card is waiting — but this offer is only valid for the next 48 hours.",
+    benefits: [
+      { icon:'🎁', title:'$30 Gift Card — Free, No Card Needed', desc:'Credited instantly to your Aiyashi wallet the moment you complete your profile.' },
+      { icon:'⭐', title:'30 Days Premium Membership — Free',     desc:'Unlimited likes, see who viewed your profile, zero ads for a full month.' },
+      { icon:'💬', title:'Unlimited Messaging from Day One',      desc:'Chat freely with all your matches — no waiting, no limits.' },
+      { icon:'🔒', title:'Verified, Genuine Members Only',        desc:'Every man on Aiyashi is identity-verified. No fake profiles, no bots.' },
+      { icon:'💵', title:'Earn Cash Rewards Up to $200',          desc:'Connect with 5+ matches and unlock real cash rewards sent directly to you.' },
+    ],
+    ctaText: 'Claim My $30 Gift Card — Join Free ✦',
+    ctaUrl:  'https://aiyashi.vip?promo=gift30&src=email_giw',
+    closing: 'Your $30 gift card is reserved under this email address and will be applied automatically when you sign up.\n\n⏰ This offer expires in 48 hours — don\'t miss out.\n\nWith warmth,\n— The Aiyashi Team 💛'
+  },
+
+  gift_invite_men: {
+    subject: "🎁 Your $30 Aiyashi Gift Card is Waiting — Exclusive Invite Inside",
+    theme: 'dark', audience: 'men',
+    headline: "Your Exclusive $30 Gift Card 🎁",
+    opening: "You\'ve been personally invited to join Aiyashi — and as a welcome gift, we\'ve reserved a $30 gift card exclusively for you.\n\nAiyashi is a curated platform where successful, ambitious men connect with genuine, elegant women who appreciate a refined lifestyle. Unlike mainstream apps — every member is verified and every interaction is private.",
+    benefits: [
+      { icon:'🎁', title:'$30 Gift Card — Yours Free',            desc:'No credit card needed. Credited to your wallet the moment you join.' },
+      { icon:'💎', title:'Premium Access — First 30 Days Free',   desc:'See who likes you, send unlimited messages, advanced filters — all free.' },
+      { icon:'✓',  title:'Verified Members Only',                 desc:'Every profile is ID-verified. You\'ll only meet real, serious people.' },
+      { icon:'🔒', title:'Completely Private & Discreet',         desc:'Your profile is never shown to contacts, colleagues or family.' },
+      { icon:'🚀', title:'Instant Profile Boost Included',        desc:'Your profile gets 10× visibility in your city for the first 7 days.' },
+    ],
+    ctaText: 'Claim My $30 Gift Card — Join Free ✦',
+    ctaUrl:  'https://aiyashi.vip?promo=gift30&src=email_gim',
+    closing: 'Your $30 gift card is tied to this email address and applied automatically at signup.\n\n⏰ Offer valid for 48 hours only.\n\nWith respect,\n— The Aiyashi Team'
+  },
+
   /* ── Acquisition ── */
   nri_invite: {
     subject: "🌏 Aiyashi — Find Your Perfect Desi Match in the USA, UK & Canada",
