@@ -308,12 +308,27 @@
     <div class="cmp-topbar-left">
       <button class="btn btn-grey" onclick="toggleSavedDrawer()">📂 Saved Campaigns <span id="saved-count-badge" style="background:#C49A2A;color:#000;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px">0</span></button>
       <button class="btn btn-grey" onclick="newCampaign()">➕ New Campaign</button>
-      <select class="cmp-select" id="cmp-template" onchange="loadTemplate(this.value)" style="max-width:260px">
+      <select class="cmp-select" id="cmp-template" onchange="loadTemplate(this.value)" style="max-width:300px">
         <option value="">— Start from a template —</option>
-        <option value="sugar_baby">💛 Invite — Women (Sugar Baby)</option>
-        <option value="sugar_daddy">💎 Invite — Men (Sugar Daddy)</option>
-        <option value="re_engage">🔥 Re-engagement (Inactive users)</option>
-        <option value="custom">✏️ Custom (blank)</option>
+        <optgroup label="🎯 Acquisition">
+          <option value="sugar_baby">💛 Invite — Women (Sugar Baby)</option>
+          <option value="sugar_daddy">💎 Invite — Men (Sugar Daddy)</option>
+          <option value="nri_invite">🌏 Invite — NRI / Indian Diaspora</option>
+          <option value="referral">🎁 Referral — Invite a Friend</option>
+        </optgroup>
+        <optgroup label="🔄 Retention & Re-engagement">
+          <option value="re_engage">🔥 Re-engagement (Inactive users)</option>
+          <option value="profile_incomplete">📝 Complete Your Profile</option>
+          <option value="premium_upgrade">⭐ Upgrade to Premium</option>
+        </optgroup>
+        <optgroup label="💌 Relationship & Events">
+          <option value="welcome">👋 Welcome — New Member</option>
+          <option value="success_story">🏆 Success Story / Testimonial</option>
+          <option value="valentines">❤️ Valentine's Day Special</option>
+        </optgroup>
+        <optgroup label="✏️ Blank">
+          <option value="custom">✏️ Custom (blank)</option>
+        </optgroup>
       </select>
     </div>
     <div class="cmp-topbar-right">
@@ -1037,6 +1052,121 @@ const TEMPLATE_DATA = {
     ctaUrl:  'https://aiyashi.vip?src=email_re',
     closing: 'Your profile and all your matches are still safely saved. Just log in to pick up where you left off.\n\n— The Aiyashi Team 💛'
   },
+  /* ── Acquisition ── */
+  nri_invite: {
+    subject: "🌏 Aiyashi — Find Your Perfect Desi Match in the USA, UK & Canada",
+    theme: 'dark', audience: 'all',
+    headline: "Your Desi Match is Waiting 🌏",
+    opening: "Living abroad shouldn't mean settling for less when it comes to love. Aiyashi is the premier platform built for the Indian diaspora — connecting successful NRI professionals with genuine, culturally-rooted partners across the USA, UK, Canada and Australia.\n\nWe understand your world — the ambition, the values, the lifestyle. And so do our members.",
+    benefits: [
+      { icon:'🇮🇳', title:'Indian & NRI Community',        desc:'Thousands of verified Indian-origin members across the US, UK, Canada & Australia.' },
+      { icon:'💼', title:'Career-Driven Professionals',    desc:'Meet doctors, engineers, entrepreneurs and executives who share your drive.' },
+      { icon:'🔒', title:'Privacy First',                  desc:'Your profile is never visible to colleagues or family — you control everything.' },
+      { icon:'💰', title:'Join Free — $30 Bonus Credit',   desc:'Sign up today and get $30 in free credit added to your account instantly.' },
+    ],
+    ctaText: 'Find My Desi Match — Join Free ✦',
+    ctaUrl:  'https://aiyashi.vip?src=email_nri',
+    closing: 'Whether you\'re looking for something serious or simply open to meeting the right person — Aiyashi gives you a private, elegant space to do it.\n\nWith warm regards,\n— The Aiyashi Team 🌏'
+  },
+
+  referral: {
+    subject: "🎁 Earn $50 — Invite a Friend to Aiyashi",
+    theme: 'light', audience: 'all',
+    headline: "Share the Love. Earn $50. 🎁",
+    opening: "Love Aiyashi? Invite a friend and both of you win.\n\nFor every friend who joins Aiyashi using your personal referral link and completes their profile, you'll both receive a $50 bonus credit — automatically added to your wallets.",
+    benefits: [
+      { icon:'🔗', title:'Share Your Unique Link',         desc:'Find your referral link in your profile settings under "Invite Friends".' },
+      { icon:'💰', title:'You Earn $50',                   desc:'Credited to your wallet as soon as your friend completes their profile.' },
+      { icon:'🎁', title:'Your Friend Gets $50 Too',       desc:'They\'ll receive $50 bonus credit when they sign up with your link.' },
+      { icon:'♾️', title:'No Limit',                       desc:'Refer as many friends as you like — rewards stack with every successful referral.' },
+    ],
+    ctaText: 'Get My Referral Link ✦',
+    ctaUrl:  'https://aiyashi.vip/referral?src=email_ref',
+    closing: 'Great connections are better when shared. Thank you for spreading the word about Aiyashi.\n\n— The Aiyashi Team 💛'
+  },
+
+  /* ── Retention ── */
+  profile_incomplete: {
+    subject: "⚠️ Your Aiyashi profile is 60% complete — finish it to get more matches",
+    theme: 'dark', audience: 'all',
+    headline: "You're Almost There! 💡",
+    opening: "Your Aiyashi profile is set up — but it's not quite complete yet.\n\nMembers with fully completed profiles get up to 4× more likes and 3× more messages than incomplete ones. It only takes 2 minutes to finish — and it makes a huge difference.",
+    benefits: [
+      { icon:'📸', title:'Add at Least 3 Photos',          desc:'Profiles with 3+ photos get 5× more right swipes. Add your best ones now.' },
+      { icon:'✍️', title:'Write a Short Bio',              desc:'Just 2–3 sentences about who you are and what you\'re looking for. Be genuine.' },
+      { icon:'💼', title:'Add Your Occupation',            desc:'Members who share their profession get 2× more premium matches.' },
+      { icon:'📍', title:'Confirm Your Location',          desc:'Accurate location helps us show you the most relevant nearby profiles.' },
+    ],
+    ctaText: 'Complete My Profile Now ✦',
+    ctaUrl:  'https://aiyashi.vip/profile/edit?src=email_pi',
+    closing: 'Your perfect match may already be on Aiyashi — but they can\'t find you if your profile is incomplete.\n\nWe\'re rooting for you,\n— The Aiyashi Team 💛'
+  },
+
+  premium_upgrade: {
+    subject: "⭐ Unlock Premium — See who likes you + send unlimited messages",
+    theme: 'dark', audience: 'all',
+    headline: "You've Got Admirers ⭐",
+    opening: "Good news — people have been liking your profile on Aiyashi. Right now you can\'t see who they are because they\'re hidden behind our Premium wall.\n\nUpgrade to Premium today and instantly see every person who liked you, messaged you, or viewed your profile.",
+    benefits: [
+      { icon:'👁️', title:'See Who Likes You',              desc:'Full list of everyone who swiped right on your profile — see them all now.' },
+      { icon:'💬', title:'Unlimited Messaging',            desc:'Send as many messages as you want to any match. No daily limits.' },
+      { icon:'🚀', title:'Profile Boost — 10× Visibility', desc:'Your profile gets pushed to the top of search results for 24 hours.' },
+      { icon:'⭐', title:'Super Likes',                    desc:'Send 5 Super Likes per day to stand out from the crowd.' },
+      { icon:'🎯', title:'Advanced Filters',               desc:'Filter by income, occupation, education, lifestyle and more.' },
+    ],
+    ctaText: 'Unlock Premium — See My Admirers ✦',
+    ctaUrl:  'https://aiyashi.vip/premium?src=email_pu',
+    closing: 'Premium starts at just $29/month — less than one dinner out. Cancel anytime, no questions asked.\n\n— The Aiyashi Team'
+  },
+
+  /* ── Relationship & Events ── */
+  welcome: {
+    subject: "💛 Welcome to Aiyashi — Here's how to get your first match",
+    theme: 'light', audience: 'all',
+    headline: "Welcome to Aiyashi 💛",
+    opening: "We\'re so glad you\'re here.\n\nAiyashi is a curated community for successful, genuine people seeking meaningful connections. Unlike other apps, every member is verified and every match is intentional.\n\nHere\'s how to get the most out of Aiyashi from day one:",
+    benefits: [
+      { icon:'📸', title:'Step 1 — Add Your Best Photos',  desc:'Upload 3–5 clear, well-lit photos. Profiles with photos get 5× more matches.' },
+      { icon:'✍️', title:'Step 2 — Write Your Bio',        desc:'Tell us a little about yourself — your passions, lifestyle and what you\'re looking for.' },
+      { icon:'🔍', title:'Step 3 — Browse & Like',         desc:'Swipe through curated profiles. Like the ones you\'re interested in to get the conversation started.' },
+      { icon:'💬', title:'Step 4 — Start a Conversation', desc:'When it\'s a mutual match, send the first message. Keep it genuine and personal.' },
+    ],
+    ctaText: 'Complete My Profile Now ✦',
+    ctaUrl:  'https://aiyashi.vip/profile/edit?src=email_wc',
+    closing: 'If you ever need help, just reply to this email — a real person on our team will respond within 24 hours.\n\nWishing you wonderful connections,\n— The Aiyashi Team 💛'
+  },
+
+  success_story: {
+    subject: "💑 \"We met on Aiyashi\" — Real stories from real members",
+    theme: 'rose', audience: 'all',
+    headline: "Love Found on Aiyashi 💑",
+    opening: "Every week, members from our community find genuine connections — and sometimes, something much deeper.\n\nHere are a few of our favourite stories from real Aiyashi members:",
+    benefits: [
+      { icon:'💬', title:'"He flew in from New York just to meet me."', desc:'— Priya, 28, San Francisco · Met Arjun, 41, NYC in March 2025. Now engaged.' },
+      { icon:'💬', title:'"I wasn\'t expecting to find someone so quickly."', desc:'— Riya, 31, London · Matched with Dev, 45, Dubai within 48 hours of joining.' },
+      { icon:'💬', title:'"Aiyashi is different — the quality of people is just higher."', desc:'— Ananya, 26, Houston · Connected with Vikram, 38, Chicago. Together 8 months.' },
+    ],
+    ctaText: 'Find My Connection ✦',
+    ctaUrl:  'https://aiyashi.vip?src=email_ss',
+    closing: 'Your story could be next. Thousands of verified members are active right now.\n\nWith hope,\n— The Aiyashi Team 💛'
+  },
+
+  valentines: {
+    subject: "❤️ Valentine\'s Special — 3 Months Premium for the Price of 1",
+    theme: 'rose', audience: 'all',
+    headline: "This Valentine\'s, Meet Someone Real ❤️",
+    opening: "This Valentine\'s Day, don\'t just wish for something special — go find it.\n\nFor a limited time, Aiyashi is offering 3 months of Premium for the price of 1. That\'s unlimited messages, full visibility into who likes you, and 3× more matches — all for just $29.",
+    benefits: [
+      { icon:'❤️', title:'3 Months Premium — $29',         desc:'Usually $87. This Valentine\'s offer expires February 14th at midnight.' },
+      { icon:'💌', title:'See All Your Secret Admirers',   desc:'Reveal everyone who has liked or super-liked your profile right now.' },
+      { icon:'🚀', title:'Valentine\'s Day Profile Boost', desc:'Your profile gets 10× visibility boost on February 13th & 14th automatically.' },
+      { icon:'💬', title:'Send Unlimited Messages',        desc:'No daily limits. Reach out to as many matches as you want.' },
+    ],
+    ctaText: 'Claim My Valentine\'s Offer ✦',
+    ctaUrl:  'https://aiyashi.vip/premium?promo=vday&src=email_vd',
+    closing: 'Offer valid until February 14th at 11:59 PM EST. Don\'t let another Valentine\'s Day pass without making a move.\n\nWith love,\n— The Aiyashi Team ❤️'
+  },
+
   custom: { subject:'', theme:'dark', audience:'all', headline:'', opening:'', benefits:[], ctaText:'', ctaUrl:'https://aiyashi.vip', closing:'' }
 };
 
