@@ -9,6 +9,24 @@ const sharp  = require('sharp');
 const path   = require('path');
 const fs     = require('fs');
 
+// ── GET /api/profiles/featured (public — landing page) ───────────
+router.get('/featured', async (req, res) => {
+  try {
+    const { rows } = await query(
+      `SELECT p.user_id AS id, p.display_name, p.age, p.occupation,
+              p.location_text, p.photos, u.is_premium, u.face_verified, u.email_verified
+       FROM profiles p JOIN users u ON u.id = p.user_id
+       WHERE u.is_fake = TRUE AND p.is_complete = TRUE
+         AND p.photos IS NOT NULL AND array_length(p.photos,1) > 0
+       ORDER BY RANDOM() LIMIT 12`,
+      []
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed' });
+  }
+});
+
 // ── GET /api/profiles/me ──────────────────────────────────────────
 router.get('/me', authenticate, async (req, res) => {
   try {
@@ -151,9 +169,68 @@ router.delete('/photo/:filename', authenticate, async (req, res) => {
 
 // ── GET /api/profiles/discover ────────────────────────────────────
 // Returns paginated profiles the current user hasn't swiped on yet
+// Query params: sort, race, gender, min_age, max_age, location, occupation, income, offset
 router.get('/discover', authenticate, async (req, res) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+    const limit  = Math.min(parseInt(req.query.limit) || 12, 50);
+    const offset = Math.max(0, parseInt(req.query.offset) || 0);
+    const { sort, race, gender, min_age, max_age, location, occupation, income } = req.query;
+
+    const params = [req.user.id];
+    const conditions = [];
+
+    // Optional filters
+    if (race) {
+      params.push(race);
+      conditions.push(`p.race = $${params.length}`);
+    }
+    if (gender && (gender === 'male' || gender === 'female')) {
+      params.push(gender);
+      conditions.push(`u.role = $${params.length}`);
+    }
+    if (min_age) {
+      params.push(parseInt(min_age));
+      conditions.push(`p.age >= $${params.length}`);
+    }
+    if (max_age) {
+      params.push(parseInt(max_age));
+      conditions.push(`p.age <= $${params.length}`);
+    }
+    if (location) {
+      params.push(`%${location}%`);
+      conditions.push(`p.location_text ILIKE $${params.length}`);
+    }
+    if (occupation) {
+      params.push(`%${occupation}%`);
+      conditions.push(`p.occupation ILIKE $${params.length}`);
+    }
+    if (income) {
+      params.push(income);
+      conditions.push(`p.income = $${params.length}`);
+    }
+
+    const extraWhere = conditions.length ? 'AND ' + conditions.join(' AND ') : '';
+
+    // Photos-first clause (profiles with photos always shown before those without)
+    const photosFirst = `CASE WHEN p.photos IS NOT NULL AND array_length(p.photos,1) > 0 THEN 0 ELSE 1 END`;
+
+    // Order by sort param
+    let orderBy;
+    if (sort === 'popular') {
+      orderBy = `${photosFirst}, (SELECT COUNT(*) FROM swipes WHERE swiped_id = p.user_id AND action IN ('like','super')) DESC, u.last_seen DESC`;
+    } else if (sort === 'new') {
+      orderBy = `${photosFirst}, u.created_at DESC`;
+    } else if (sort === 'online') {
+      orderBy = `${photosFirst}, u.last_seen DESC`;
+    } else {
+      // relevance (default) — photos first, then boosts, then last seen
+      orderBy = `${photosFirst}, CASE WHEN EXISTS (SELECT 1 FROM boosts WHERE user_id = p.user_id AND expires_at > NOW()) THEN 0 ELSE 1 END, u.last_seen DESC`;
+    }
+
+    params.push(limit);
+    const limitParam = `$${params.length}`;
+    params.push(offset);
+    const offsetParam = `$${params.length}`;
 
     const { rows } = await query(
       `SELECT
@@ -169,12 +246,15 @@ router.get('/discover', authenticate, async (req, res) => {
          p.photos,
          p.relationship_goal,
          p.height_cm,
+         p.race,
+         p.income,
          u.email_verified,
          u.phone_verified,
          u.face_verified,
          u.carrier,
          u.is_premium,
-         u.last_seen
+         u.last_seen,
+         u.role
        FROM profiles p
        JOIN users u ON u.id = p.user_id
        WHERE
@@ -193,20 +273,52 @@ router.get('/discover', authenticate, async (req, res) => {
            UNION
            SELECT blocker_id FROM blocks WHERE blocked_id = $1
          )
-       ORDER BY
-         -- Boost active users to top
-         CASE WHEN EXISTS (
-           SELECT 1 FROM boosts WHERE user_id = p.user_id AND expires_at > NOW()
-         ) THEN 0 ELSE 1 END,
-         u.last_seen DESC
-       LIMIT $2`,
-      [req.user.id, limit]
+         ${extraWhere}
+       ORDER BY ${orderBy}
+       LIMIT ${limitParam} OFFSET ${offsetParam}`,
+      params
     );
 
     res.json(rows);
   } catch (err) {
     console.error('Discover error:', err);
     res.status(500).json({ error: 'Failed to load profiles' });
+  }
+});
+
+// ── GET /api/profiles/activity ────────────────────────────────────
+// Returns recent likes received and recent matches for the current user
+router.get('/activity', authenticate, async (req, res) => {
+  try {
+    // Likes: up to 20 most recent swipes where swiped_id = current user
+    const { rows: likes } = await query(
+      `SELECT s.swiper_id AS id, s.action, s.created_at,
+              p.display_name, p.photos, p.age, p.location_text
+       FROM swipes s
+       JOIN profiles p ON p.user_id = s.swiper_id
+       WHERE s.swiped_id = $1 AND s.action IN ('like','super')
+       ORDER BY s.created_at DESC
+       LIMIT 20`,
+      [req.user.id]
+    );
+
+    // Matches: up to 10 recent matches
+    const { rows: matchRows } = await query(
+      `SELECT m.id AS match_id, m.created_at,
+              CASE WHEN m.user1_id = $1 THEN m.user2_id ELSE m.user1_id END AS partner_id,
+              p.display_name, p.photos, p.age, p.location_text
+       FROM matches m
+       JOIN profiles p ON p.user_id = CASE WHEN m.user1_id = $1 THEN m.user2_id ELSE m.user1_id END
+       WHERE (m.user1_id = $1 OR m.user2_id = $1) AND m.unmatched_by IS NULL
+       ORDER BY m.created_at DESC
+       LIMIT 10`,
+      [req.user.id]
+    );
+
+    res.json({ likes, matches: matchRows });
+  } catch (err) {
+    console.error('Activity error:', err);
+    res.status(500).json({ error: 'Failed to load activity' });
   }
 });
 

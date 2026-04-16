@@ -140,7 +140,13 @@ export const auth = {
 export const profiles = {
   getMe()           { return apiFetch('/api/profiles/me'); },
   updateMe(data)    { return apiFetch('/api/profiles/me', { method: 'PUT', body: JSON.stringify(data) }); },
-  getDiscover(limit = 20) { return apiFetch(`/api/profiles/discover?limit=${limit}`); },
+  getDiscover(limit = 20, params) {
+    if (params instanceof URLSearchParams) {
+      params.set('limit', limit);
+      return apiFetch(`/api/profiles/discover?${params.toString()}`);
+    }
+    return apiFetch(`/api/profiles/discover?limit=${limit}`);
+  },
   getById(id)       { return apiFetch(`/api/profiles/${id}`); },
 
   async uploadPhoto(file) {

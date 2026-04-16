@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aiyashi — Admin Panel</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Inter, sans-serif; background: #0f0f0f; color: #eee; min-height: 100vh; }
+
+  /* ── Login overlay ── */
+  #login-overlay {
+    position: fixed; inset: 0; background: #0f0f0f;
+    display: flex; align-items: center; justify-content: center; z-index: 999;
+  }
+  .login-box {
+    background: #1a1a1a; border: 1px solid #333; border-radius: 12px;
+    padding: 40px; width: 320px; text-align: center;
+  }
+  .login-box h2 { color: #C49A2A; margin-bottom: 24px; font-size: 22px; }
+  .login-box input {
+    width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #444;
+    background: #111; color: #fff; font-size: 15px; margin-bottom: 16px;
+  }
+  .login-box button {
+    width: 100%; padding: 12px; border-radius: 8px; border: none;
+    background: #C49A2A; color: #000; font-weight: 700; font-size: 15px; cursor: pointer;
+  }
+  .login-box .err { color: #e55; font-size: 13px; margin-top: 10px; }
+
+  /* ── Top bar ── */
+  #topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: #151515; border-bottom: 1px solid #2a2a2a;
+    padding: 0 20px; display: flex; align-items: stretch; gap: 0; flex-wrap: wrap;
+  }
+  #topbar h1 { font-size: 18px; color: #C49A2A; padding: 14px 20px 14px 0; display: flex; align-items: center; }
+
+  /* ── Page tabs ── */
+  .page-tabs { display: flex; align-items: stretch; gap: 0; margin-right: auto; }
+  .page-tab {
+    padding: 14px 22px; font-size: 14px; font-weight: 600; cursor: pointer;
+    border: none; background: transparent; color: #888;
+    border-bottom: 3px solid transparent; transition: color .15s, border-color .15s;
+  }
+  .page-tab:hover { color: #ccc; }
+  .page-tab.active { color: #C49A2A; border-bottom-color: #C49A2A; }
+
+  /* ── Toolbar (changes per tab) ── */
+  .toolbar-area { display: flex; align-items: center; gap: 10px; padding: 10px 0; }
+
+  .btn {
+    padding: 8px 16px; border-radius: 6px; border: none;
+    font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity .15s;
+  }
+  .btn:hover { opacity: .85; }
+  .btn-gold  { background: #C49A2A; color: #000; }
+  .btn-red   { background: #c0392b; color: #fff; }
+  .btn-grey  { background: #333; color: #eee; }
+
+  select, input[type="text"] {
+    padding: 8px 12px; border-radius: 6px; border: 1px solid #444;
+    background: #222; color: #eee; font-size: 14px;
+  }
+  input[type="text"]::placeholder { color: #666; }
+
+  #sel-count  { font-size: 14px; color: #aaa; }
+  #total-count { font-size: 13px; color: #666; }
+
+  /* ── Fake Profiles grid ── */
+  #page-profiles { display: none; }
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px; padding: 20px;
+  }
+  .pcard {
+    background: #1a1a1a; border: 2px solid transparent;
+    border-radius: 10px; overflow: hidden; cursor: pointer;
+    transition: border-color .15s, transform .1s;
+    position: relative; user-select: none;
+  }
+  .pcard:hover { transform: translateY(-2px); }
+  .pcard.selected { border-color: #C49A2A; }
+  .pcard .check {
+    position: absolute; top: 8px; left: 8px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(0,0,0,.6); border: 2px solid #aaa;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; z-index: 2;
+  }
+  .pcard.selected .check { background: #C49A2A; border-color: #C49A2A; color: #000; }
+  .pcard img { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; background: #222; }
+  .pcard .info { padding: 8px 10px 10px; }
+  .pcard .name { font-size: 13px; font-weight: 600; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pcard .meta { font-size: 11px; color: #888; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pcard .tag  { font-size: 10px; color: #C49A2A; margin-top: 4px; }
+
+  /* ── Members table ── */
+  #page-members { display: none; padding: 20px; }
+  .members-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .members-toolbar span { font-size: 13px; color: #666; margin-left: auto; }
+
+  .tbl-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid #2a2a2a; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead { background: #1a1a1a; }
+  thead th {
+    padding: 12px 14px; text-align: left; color: #888; font-weight: 600;
+    border-bottom: 1px solid #2a2a2a; white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid #1e1e1e; transition: background .1s; }
+  tbody tr:hover { background: #161616; }
+  tbody tr.sel-row { background: #1c1600; }
+  tbody td { padding: 11px 14px; color: #ddd; vertical-align: middle; }
+  .td-check { width: 36px; text-align: center; }
+  .td-check input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: #C49A2A; }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge-male   { background: #1a3a5c; color: #6ab0f5; }
+  .badge-female { background: #3a1a2a; color: #f590b0; }
+  .badge-other  { background: #2a2a2a; color: #aaa; }
+  .td-email     { font-family: monospace; font-size: 12px; color: #aaa; }
+  .td-date      { font-size: 12px; color: #666; white-space: nowrap; }
+  .td-num       { text-align: center; color: #888; }
+  .no-photo-avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: #2a2a2a;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .member-avatar { display: flex; align-items: center; gap: 10px; }
+  .member-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #2a2a2a; }
+  .member-name { font-weight: 600; color: #eee; }
+  .member-sub  { font-size: 11px; color: #666; margin-top: 2px; }
+
+  /* ── Pagination (shared) ── */
+  .pagination {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 20px;
+  }
+  .pagination button {
+    padding: 8px 16px; border-radius: 6px; border: 1px solid #444;
+    background: #222; color: #eee; cursor: pointer; font-size: 14px;
+  }
+  .pagination button:disabled { opacity: .4; cursor: default; }
+  .pagination span { font-size: 14px; color: #aaa; }
+
+  /* ── Loading / empty ── */
+  .loader-msg { text-align: center; padding: 60px; color: #666; font-size: 15px; }
+
+  /* ── Campaign page ── */
+  #page-campaign { padding:20px; }
+  .cmp-topbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; padding:14px 18px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px; }
+  .cmp-topbar-left { display:flex; align-items:center; gap:10px; flex:1; flex-wrap:wrap; }
+  .cmp-topbar-right { display:flex; gap:8px; }
+  .cmp-layout { display:grid; grid-template-columns:1fr 360px; gap:16px; }
+  @media(max-width:960px){ .cmp-layout{ grid-template-columns:1fr; } }
+  .cmp-card { background:#1a1a1a; border:1px solid #2a2a2a; border-radius:12px; padding:18px; margin-bottom:14px; }
+  .cmp-card-title { font-size:14px; font-weight:700; color:#C49A2A; margin-bottom:14px; }
+  .cmp-field { margin-bottom:14px; }
+  .cmp-label { display:block; font-size:11px; font-weight:700; color:#777; text-transform:uppercase; letter-spacing:.6px; margin-bottom:6px; }
+  .cmp-input, .cmp-select, .cmp-textarea {
+    width:100%; padding:9px 12px; border-radius:8px;
+    border:1px solid #333; background:#111; color:#eee;
+    font-size:14px; font-family:inherit; outline:none; transition:border-color .15s;
+  }
+  .cmp-input:focus, .cmp-select:focus, .cmp-textarea:focus { border-color:#C49A2A; }
+  .cmp-select option { background:#1a1a1a; }
+  .cmp-textarea { resize:vertical; min-height:80px; }
+  .cmp-hint { font-size:11px; color:#555; margin-top:4px; }
+  code { background:#222; padding:2px 6px; border-radius:4px; font-size:12px; color:#C49A2A; }
+  /* Mode toggle */
+  .mode-toggle { display:flex; background:#111; border:1px solid #333; border-radius:8px; overflow:hidden; }
+  .mode-btn { padding:7px 14px; font-size:12px; font-weight:600; background:transparent; border:none; color:#777; cursor:pointer; transition:all .15s; }
+  .mode-btn.active { background:#C49A2A; color:#000; }
+  /* Pill selector */
+  .cmp-pills { display:flex; flex-wrap:wrap; gap:6px; }
+  .cmp-pill { padding:5px 13px; border-radius:20px; border:1px solid #333; background:transparent; color:#888; font-size:12px; font-weight:600; cursor:pointer; transition:all .15s; }
+  .cmp-pill.active { background:#C49A2A; border-color:#C49A2A; color:#000; }
+  /* Benefit row */
+  .benefit-row { display:grid; grid-template-columns:48px 1fr 1fr auto; gap:8px; align-items:center; margin-bottom:8px; }
+  .benefit-row input { padding:7px 10px; border-radius:7px; border:1px solid #333; background:#111; color:#eee; font-size:13px; font-family:inherit; outline:none; width:100%; }
+  .benefit-row input:focus { border-color:#C49A2A; }
+  .benefit-del { background:#2a1a1a; border:1px solid #4a2a2a; color:#e55; border-radius:6px; padding:6px 10px; cursor:pointer; font-size:13px; }
+  /* Saved campaigns drawer */
+  #saved-drawer { display:none; background:#111; border:1px solid #2a2a2a; border-radius:10px; padding:14px; margin-bottom:14px; }
+  .saved-item { display:flex; align-items:center; gap:10px; padding:9px 12px; background:#1a1a1a; border-radius:8px; margin-bottom:6px; border:1px solid #2a2a2a; }
+  .saved-item-name { flex:1; font-size:13px; font-weight:600; color:#ddd; }
+  .saved-item-date { font-size:11px; color:#555; }
+  .saved-item-btns { display:flex; gap:6px; }
+  .saved-item-btn { padding:4px 10px; border-radius:5px; border:1px solid #333; background:#222; color:#aaa; font-size:11px; cursor:pointer; }
+  .saved-item-btn:hover { border-color:#C49A2A; color:#C49A2A; }
+  /* Preview tabs */
+  .preview-tabs { display:flex; gap:0; border-bottom:1px solid #2a2a2a; margin-bottom:12px; }
+  .preview-tab { padding:8px 16px; font-size:12px; font-weight:600; color:#666; cursor:pointer; border:none; background:transparent; border-bottom:2px solid transparent; }
+  .preview-tab.active { color:#C49A2A; border-bottom-color:#C49A2A; }
+
+  /* ── Confirm dialog ── */
+  #confirm-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.8);
+    display: none; align-items: center; justify-content: center; z-index: 200;
+  }
+  #confirm-overlay.show { display: flex; }
+  .confirm-box {
+    background: #1a1a1a; border: 1px solid #444; border-radius: 12px;
+    padding: 32px; max-width: 380px; width: 90%; text-align: center;
+  }
+  .confirm-box h3 { color: #eee; margin-bottom: 12px; }
+  .confirm-box p  { color: #aaa; font-size: 14px; margin-bottom: 24px; }
+  .confirm-btns   { display: flex; gap: 12px; justify-content: center; }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-overlay">
+  <div class="login-box">
+    <h2>⚙️ Admin Panel</h2>
+    <input type="password" id="pwd-input" placeholder="Admin password" />
+    <button onclick="doLogin()">Enter</button>
+    <div class="err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- Top bar -->
+<div id="topbar" style="display:none">
+  <h1>Aiyashi Admin</h1>
+  <div class="page-tabs">
+    <button class="page-tab active" onclick="switchTab('profiles')">👤 Fake Profiles</button>
+    <button class="page-tab"        onclick="switchTab('members')">👥 Members</button>
+    <button class="page-tab"        onclick="switchTab('campaign')">📧 Campaigns</button>
+  </div>
+
+  <!-- Fake Profiles toolbar -->
+  <div class="toolbar-area" id="tb-profiles">
+    <select id="group-filter" onchange="changeGroup()">
+      <option value="all">All Fake Profiles</option>
+    </select>
+    <button class="btn btn-grey" onclick="selectAll()">Select All</button>
+    <button class="btn btn-grey" onclick="deselectAll()">Deselect All</button>
+    <button class="btn btn-red"  onclick="showConfirm('profiles')">🗑 Delete Selected</button>
+    <span id="sel-count">0 selected</span>
+    <span id="total-count"></span>
+  </div>
+
+  <!-- Campaign toolbar (empty — all controls are inside the page) -->
+  <div class="toolbar-area" id="tb-campaign" style="display:none">
+    <span style="font-size:14px;color:#888">Compose &amp; send email campaigns · From: <strong style="color:#C49A2A">info@aiyashi.vip</strong></span>
+  </div>
+
+  <!-- Members toolbar -->
+  <div class="toolbar-area" id="tb-members" style="display:none">
+    <input type="text" id="member-search" placeholder="Search name or email…" style="width:220px"
+           oninput="debounceMemberSearch()" />
+    <button class="btn btn-grey" onclick="selectAllMembers()">Select All</button>
+    <button class="btn btn-grey" onclick="deselectAllMembers()">Deselect All</button>
+    <button class="btn btn-red"  onclick="showConfirm('members')">🗑 Delete Selected</button>
+    <span id="msel-count">0 selected</span>
+    <span id="mtotal-count"></span>
+  </div>
+</div>
+
+<!-- ── Fake Profiles page ── -->
+<div id="page-profiles">
+  <div id="grid"><div class="loader-msg">Loading…</div></div>
+  <div class="pagination" id="pagination" style="display:none">
+    <button id="btn-prev" onclick="goPage(currentPage-1)">← Prev</button>
+    <span id="page-info"></span>
+    <button id="btn-next" onclick="goPage(currentPage+1)">Next →</button>
+  </div>
+</div>
+
+<!-- ── Members page ── -->
+<div id="page-members">
+  <div class="tbl-wrap">
+    <table id="members-table">
+      <thead>
+        <tr>
+          <th class="td-check"><input type="checkbox" id="chk-all-members" onchange="toggleAllMembers(this)"></th>
+          <th>Member</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Location</th>
+          <th>Occupation</th>
+          <th>Swipes</th>
+          <th>Matches</th>
+          <th>Joined</th>
+        </tr>
+      </thead>
+      <tbody id="members-tbody">
+        <tr><td colspan="9" class="loader-msg">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="pagination" id="m-pagination" style="display:none">
+    <button id="mbtn-prev" onclick="goMemberPage(memberPage-1)">← Prev</button>
+    <span id="mpage-info"></span>
+    <button id="mbtn-next" onclick="goMemberPage(memberPage+1)">Next →</button>
+  </div>
+</div>
+
+<!-- ── Campaign Page ── -->
+<div id="page-campaign" style="display:none">
+
+  <!-- ── Top action bar ── -->
+  <div class="cmp-topbar">
+    <div class="cmp-topbar-left">
+      <button class="btn btn-grey" onclick="toggleSavedDrawer()">📂 Saved Campaigns <span id="saved-count-badge" style="background:#C49A2A;color:#000;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px">0</span></button>
+      <button class="btn btn-grey" onclick="newCampaign()">➕ New Campaign</button>
+      <select class="cmp-select" id="cmp-template" onchange="loadTemplate(this.value)" style="max-width:260px">
+        <option value="">— Start from a template —</option>
+        <option value="sugar_baby">💛 Invite — Women (Sugar Baby)</option>
+        <option value="sugar_daddy">💎 Invite — Men (Sugar Daddy)</option>
+        <option value="re_engage">🔥 Re-engagement (Inactive users)</option>
+        <option value="custom">✏️ Custom (blank)</option>
+      </select>
+    </div>
+    <div class="cmp-topbar-right">
+      <button class="btn btn-grey" onclick="saveCampaignPrompt()">💾 Save Campaign</button>
+      <button class="btn btn-grey" onclick="showTestSend()">📨 Send Test</button>
+    </div>
+  </div>
+
+  <!-- ── Saved campaigns drawer ── -->
+  <div id="saved-drawer">
+    <div style="font-size:13px;font-weight:700;color:#C49A2A;margin-bottom:10px">📂 Saved Campaigns</div>
+    <div id="saved-list"><div style="color:#555;font-size:13px">No saved campaigns yet.</div></div>
+  </div>
+
+  <!-- ── Test send row ── -->
+  <div id="test-send-row" style="display:none;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:14px;margin-bottom:14px">
+    <div style="font-size:13px;font-weight:600;color:#C49A2A;margin-bottom:8px">📨 Send Test Email</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="email" id="test-email-input" class="cmp-input" style="flex:1;max-width:320px" placeholder="your@email.com">
+      <button class="btn btn-gold" onclick="sendTestEmail()">Send Test</button>
+      <button class="btn btn-grey" onclick="document.getElementById('test-send-row').style.display='none'">✕</button>
+    </div>
+    <div id="test-send-result" style="font-size:12px;margin-top:8px;color:#aaa"></div>
+  </div>
+
+  <!-- ── Main layout ── -->
+  <div class="cmp-layout">
+
+    <!-- LEFT: Builder -->
+    <div>
+      <div class="cmp-card">
+
+        <!-- Mode toggle + subject -->
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+          <div class="cmp-label" style="margin:0;flex-shrink:0">Edit Mode:</div>
+          <div class="mode-toggle">
+            <button class="mode-btn active" id="btn-mode-visual" onclick="setEditorMode('visual')">🎨 Visual Builder</button>
+            <button class="mode-btn" id="btn-mode-html" onclick="setEditorMode('html')">💻 HTML Editor</button>
+          </div>
+        </div>
+
+        <div class="cmp-field">
+          <label class="cmp-label">Subject Line <span style="color:#555;font-weight:400;text-transform:none;font-size:11px">(keep under 60 chars for best open rate)</span></label>
+          <input type="text" id="cmp-subject" class="cmp-input" placeholder="Enter email subject…" maxlength="200" oninput="updateSubjectHint(this)">
+          <div id="subject-hint" class="cmp-hint"></div>
+        </div>
+
+        <!-- ── VISUAL BUILDER ── -->
+        <div id="visual-builder">
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+            <div>
+              <label class="cmp-label">Target Audience</label>
+              <div class="cmp-pills" id="audience-pills">
+                <button class="cmp-pill active" data-val="women" onclick="setPill('audience',this)">👩 Women</button>
+                <button class="cmp-pill" data-val="men" onclick="setPill('audience',this)">💎 Men</button>
+                <button class="cmp-pill" data-val="all" onclick="setPill('audience',this)">🌐 All</button>
+              </div>
+            </div>
+            <div>
+              <label class="cmp-label">Color Theme</label>
+              <div class="cmp-pills" id="theme-pills">
+                <button class="cmp-pill active" data-val="dark" onclick="setPill('theme',this);livePreview()">🌙 Dark Gold</button>
+                <button class="cmp-pill" data-val="light" onclick="setPill('theme',this);livePreview()">☀️ Light</button>
+                <button class="cmp-pill" data-val="rose" onclick="setPill('theme',this);livePreview()">🌹 Rose</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="cmp-field">
+            <label class="cmp-label">Headline</label>
+            <input type="text" id="vb-headline" class="cmp-input" placeholder="You're Invited 💛" oninput="livePreview()">
+          </div>
+
+          <div class="cmp-field">
+            <label class="cmp-label">Opening Paragraph</label>
+            <textarea id="vb-opening" class="cmp-textarea" rows="3" placeholder="We've handpicked you for an exclusive invitation to Aiyashi…" oninput="livePreview()"></textarea>
+          </div>
+
+          <div class="cmp-field">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <label class="cmp-label" style="margin:0">Benefits / Features</label>
+              <button class="btn btn-grey" style="padding:4px 10px;font-size:12px" onclick="addBenefit()">+ Add Row</button>
+            </div>
+            <div id="vb-benefits-list">
+              <!-- benefit rows inserted here -->
+            </div>
+            <div class="cmp-hint">Icon · Title · Description (optional)</div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+            <div>
+              <label class="cmp-label">CTA Button Text</label>
+              <input type="text" id="vb-cta-text" class="cmp-input" placeholder="Join Free — Get $30 Credit ✦" oninput="livePreview()">
+            </div>
+            <div>
+              <label class="cmp-label">CTA Button URL</label>
+              <input type="text" id="vb-cta-url" class="cmp-input" placeholder="https://aiyashi.vip?src=email" oninput="livePreview()">
+            </div>
+          </div>
+
+          <div class="cmp-field">
+            <label class="cmp-label">Closing Message</label>
+            <textarea id="vb-closing" class="cmp-textarea" rows="2" placeholder="— The Aiyashi Team 💛" oninput="livePreview()"></textarea>
+          </div>
+
+        </div><!-- /visual-builder -->
+
+        <!-- ── HTML EDITOR ── -->
+        <div id="html-editor" style="display:none">
+          <div class="cmp-field">
+            <label class="cmp-label">Email Body (HTML)</label>
+            <textarea id="cmp-body" class="cmp-textarea" rows="22" placeholder="Paste or type your HTML here…" oninput="livePreview()"></textarea>
+            <div class="cmp-hint">Full HTML supported. Switch to Visual mode to use the builder.</div>
+          </div>
+        </div>
+
+      </div><!-- /compose card -->
+
+      <!-- ── Live Preview ── -->
+      <div class="cmp-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="cmp-card-title" style="margin:0">👁 Live Preview</div>
+          <div class="cmp-pills">
+            <button class="cmp-pill active" data-val="desktop" onclick="setPreviewWidth('100%',this)">🖥 Desktop</button>
+            <button class="cmp-pill" data-val="mobile" onclick="setPreviewWidth('375px',this)">📱 Mobile</button>
+          </div>
+        </div>
+        <div style="background:#f0ede8;border-radius:8px;padding:12px;overflow:auto">
+          <div id="preview-wrap" style="margin:0 auto;transition:max-width .3s;max-width:100%">
+            <iframe id="preview-iframe-live" style="width:100%;height:520px;border:none;border-radius:6px;background:#fff" sandbox="allow-same-origin"></iframe>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /left col -->
+
+    <!-- RIGHT: Recipients + Send -->
+    <div>
+      <div class="cmp-card">
+        <div class="cmp-card-title">📋 Recipients</div>
+        <div class="cmp-field">
+          <label class="cmp-label">Paste Email Addresses</label>
+          <textarea id="cmp-emails" class="cmp-textarea" rows="9"
+            placeholder="One per line, or comma / semicolon separated:&#10;&#10;alice@example.com&#10;bob@example.com, carol@example.com"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+          <button class="btn btn-grey" onclick="parseRecipients()">✔ Validate List</button>
+          <span id="recipient-count" style="font-size:13px;color:#aaa">0 recipients</span>
+        </div>
+        <div id="recipient-preview" style="display:none">
+          <div class="cmp-label" style="margin-bottom:6px">
+            <span id="valid-count" style="color:#4caf50">0 valid</span> &nbsp;·&nbsp;
+            <span id="invalid-count" style="color:#e55">0 invalid</span>
+          </div>
+          <div id="invalid-list" style="font-size:11px;color:#e55;margin-bottom:8px;word-break:break-all;max-height:60px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+      <div class="cmp-card">
+        <div class="cmp-card-title">🚀 Send Campaign</div>
+        <div style="font-size:13px;color:#888;margin-bottom:16px;line-height:1.7">
+          Sends from <strong style="color:#C49A2A">info@aiyashi.vip</strong><br>
+          Requires <code>SMTP_PASS</code> in server <code>.env</code>
+        </div>
+        <button class="btn btn-gold" style="width:100%;padding:14px;font-size:15px" onclick="startCampaign()" id="send-campaign-btn">
+          ✉️ Send Campaign
+        </button>
+        <div id="campaign-progress" style="display:none;margin-top:18px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:#aaa;margin-bottom:6px">
+            <span>Sending…</span><span id="progress-label">0 / 0</span>
+          </div>
+          <div style="background:#2a2a2a;border-radius:50px;height:8px;overflow:hidden">
+            <div id="progress-bar" style="background:linear-gradient(90deg,#C49A2A,#E8C060);height:100%;width:0%;transition:width .4s;border-radius:50px"></div>
+          </div>
+          <div id="progress-status" style="font-size:12px;color:#666;margin-top:6px;text-align:center"></div>
+        </div>
+        <div id="campaign-result" style="display:none;margin-top:14px;padding:14px;border-radius:10px;background:#1a2a1a;border:1px solid #2a4a2a">
+          <div style="font-size:14px;font-weight:700;color:#4caf50;margin-bottom:4px">✅ Campaign Complete!</div>
+          <div id="result-detail" style="font-size:13px;color:#aaa"></div>
+        </div>
+      </div>
+
+      <!-- History card -->
+      <div class="cmp-card">
+        <div class="cmp-card-title">📊 Quick Stats</div>
+        <div id="campaign-stats" style="font-size:13px;color:#666;line-height:2">
+          No campaigns sent yet this session.
+        </div>
+      </div>
+    </div><!-- /right col -->
+
+  </div><!-- /cmp-layout -->
+</div><!-- /page-campaign -->
+
+<!-- Save Campaign Modal -->
+<div id="save-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:400;align-items:center;justify-content:center">
+  <div style="background:#1a1a1a;border:1px solid #333;border-radius:14px;padding:28px;width:90%;max-width:380px">
+    <div style="font-size:16px;font-weight:700;color:#C49A2A;margin-bottom:16px">💾 Save Campaign</div>
+    <label class="cmp-label">Campaign Name</label>
+    <input type="text" id="save-name-input" class="cmp-input" placeholder="e.g. Women Invite — April 2026" style="margin-bottom:16px">
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-gold" onclick="doSaveCampaign()" style="flex:1">Save</button>
+      <button class="btn btn-grey" onclick="document.getElementById('save-modal').style.display='none'">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Full Preview Modal -->
+<div id="email-preview-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;width:90%;max-width:680px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column">
+    <div style="padding:14px 18px;background:#1a1a1a;display:flex;align-items:center;justify-content:space-between">
+      <span style="color:#eee;font-size:14px;font-weight:600">📧 Full Preview</span>
+      <button onclick="closePreview()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="flex:1;overflow-y:auto">
+      <iframe id="preview-iframe" style="width:100%;height:620px;border:none"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm dialog -->
+<div id="confirm-overlay">
+  <div class="confirm-box">
+    <h3 id="confirm-title">Delete?</h3>
+    <p id="confirm-msg">This cannot be undone.</p>
+    <div class="confirm-btns">
+      <button class="btn btn-grey" onclick="hideConfirm()">Cancel</button>
+      <button class="btn btn-red"  id="confirm-ok-btn" onclick="doDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ADMIN_KEY  = 'aiyashi-admin-2026';
+const PAGE_SIZE  = 60;
+const M_PAGE_SIZE = 50;
+
+/* ── shared state ── */
+let activeTab    = 'profiles';
+
+/* ── profiles state ── */
+let currentPage  = 1;
+let currentGroup = 'all';
+let selected     = new Set();
+
+/* ── members state ── */
+let memberPage   = 1;
+let memberSearch = '';
+let mSelected    = new Set();
+let deleteContext = 'profiles';    // which set to delete on confirm
+
+/* ── Login ── */
+document.getElementById('pwd-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+function doLogin() {
+  const pwd = document.getElementById('pwd-input').value.trim();
+  if (pwd === 'admin2026') {
+    document.getElementById('login-overlay').style.display = 'none';
+    document.getElementById('topbar').style.display = 'flex';
+    document.getElementById('page-profiles').style.display = 'block';
+    loadGroups();
+    loadPage(1);
+  } else {
+    document.getElementById('login-err').textContent = 'Wrong password';
+  }
+}
+
+/* ── Tab switching ── */
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.page-tab').forEach((t, i) => {
+    t.classList.toggle('active',
+      (i === 0 && tab === 'profiles') ||
+      (i === 1 && tab === 'members')  ||
+      (i === 2 && tab === 'campaign'));
+  });
+  document.getElementById('page-profiles').style.display = tab === 'profiles' ? 'block' : 'none';
+  document.getElementById('page-members').style.display  = tab === 'members'  ? 'block' : 'none';
+  document.getElementById('page-campaign').style.display = tab === 'campaign' ? 'block' : 'none';
+  document.getElementById('tb-profiles').style.display   = tab === 'profiles' ? 'flex'  : 'none';
+  document.getElementById('tb-members').style.display    = tab === 'members'  ? 'flex'  : 'none';
+  document.getElementById('tb-campaign').style.display   = tab === 'campaign' ? 'flex'  : 'none';
+  if (tab === 'members'  && memberPage === 1) loadMembers(1);
+  if (tab === 'campaign') initCampaignTab();
+}
+
+/* ════════════════════════════════════════
+   FAKE PROFILES
+════════════════════════════════════════ */
+async function loadGroups() {
+  const res  = await fetch('/api/admin/groups', { headers: { 'x-admin-key': ADMIN_KEY } });
+  const data = await res.json();
+  const sel  = document.getElementById('group-filter');
+  while (sel.options.length > 1) sel.remove(1);
+  for (const g of data) {
+    const opt = document.createElement('option');
+    opt.value = g.grp;
+    opt.textContent = `${g.grp}* (${g.cnt})`;
+    sel.appendChild(opt);
+  }
+}
+
+async function loadPage(page) {
+  currentPage = page;
+  document.getElementById('grid').innerHTML = '<div class="loader-msg">Loading…</div>';
+  document.getElementById('pagination').style.display = 'none';
+
+  const url = `/api/admin/profiles?page=${page}&limit=${PAGE_SIZE}&group=${currentGroup}`;
+  const res  = await fetch(url, { headers: { 'x-admin-key': ADMIN_KEY } });
+  const data = await res.json();
+
+  document.getElementById('total-count').textContent = `Total: ${data.total} profiles`;
+  renderGrid(data.profiles);
+  renderPagination(data.total, page);
+}
+
+function renderGrid(profiles) {
+  const grid = document.getElementById('grid');
+  if (!profiles.length) { grid.innerHTML = '<div class="loader-msg">No profiles found.</div>'; return; }
+  grid.innerHTML = '';
+  for (const p of profiles) {
+    const photo = p.photos && p.photos.length
+      ? `/uploads/${p.photos[0]}`
+      : 'https://via.placeholder.com/160x160/222/555?text=No+Photo';
+    const isSelected = selected.has(p.id);
+    const emailTag = p.email.split('@')[0].replace(/_\d+$/, '_*');
+    const card = document.createElement('div');
+    card.className = 'pcard' + (isSelected ? ' selected' : '');
+    card.dataset.id = p.id;
+    card.innerHTML = `
+      <div class="check">${isSelected ? '✓' : ''}</div>
+      <img src="${photo}" loading="lazy" onerror="this.src='https://via.placeholder.com/160x160/222/555?text=?'">
+      <div class="info">
+        <div class="name">${p.display_name || '—'}, ${p.age || '?'}</div>
+        <div class="meta">${p.location_text || '—'}</div>
+        <div class="meta">${(p.occupation || '').split(' ').slice(0,3).join(' ')}</div>
+        <div class="tag">${emailTag}</div>
+      </div>`;
+    card.addEventListener('click', () => toggleCard(card, p.id));
+    grid.appendChild(card);
+  }
+}
+
+function toggleCard(card, id) {
+  if (selected.has(id)) { selected.delete(id); card.classList.remove('selected'); card.querySelector('.check').textContent = ''; }
+  else { selected.add(id); card.classList.add('selected'); card.querySelector('.check').textContent = '✓'; }
+  document.getElementById('sel-count').textContent = `${selected.size} selected`;
+}
+
+function selectAll() {
+  document.querySelectorAll('.pcard').forEach(card => {
+    selected.add(card.dataset.id); card.classList.add('selected'); card.querySelector('.check').textContent = '✓';
+  });
+  document.getElementById('sel-count').textContent = `${selected.size} selected`;
+}
+function deselectAll() {
+  selected.clear();
+  document.querySelectorAll('.pcard').forEach(card => { card.classList.remove('selected'); card.querySelector('.check').textContent = ''; });
+  document.getElementById('sel-count').textContent = '0 selected';
+}
+
+function renderPagination(total, page) {
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (totalPages <= 1) return;
+  document.getElementById('pagination').style.display = 'flex';
+  document.getElementById('page-info').textContent = `Page ${page} of ${totalPages}`;
+  document.getElementById('btn-prev').disabled = page <= 1;
+  document.getElementById('btn-next').disabled = page >= totalPages;
+}
+
+function goPage(page) { loadPage(page); window.scrollTo(0,0); }
+
+function changeGroup() {
+  currentGroup = document.getElementById('group-filter').value;
+  selected.clear();
+  document.getElementById('sel-count').textContent = '0 selected';
+  loadPage(1);
+}
+
+/* ════════════════════════════════════════
+   MEMBERS TABLE
+════════════════════════════════════════ */
+let _searchTimer = null;
+function debounceMemberSearch() {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(() => {
+    memberSearch = document.getElementById('member-search').value.trim();
+    mSelected.clear();
+    document.getElementById('msel-count').textContent = '0 selected';
+    loadMembers(1);
+  }, 350);
+}
+
+async function loadMembers(page) {
+  memberPage = page;
+  document.getElementById('members-tbody').innerHTML =
+    '<tr><td colspan="9" class="loader-msg">Loading…</td></tr>';
+  document.getElementById('m-pagination').style.display = 'none';
+
+  const qs  = new URLSearchParams({ page, limit: M_PAGE_SIZE, search: memberSearch });
+  const res  = await fetch(`/api/admin/members?${qs}`, { headers: { 'x-admin-key': ADMIN_KEY } });
+  const data = await res.json();
+
+  document.getElementById('mtotal-count').textContent = `Total: ${data.total} members`;
+  renderMembersTable(data.members);
+  renderMemberPagination(data.total, page);
+}
+
+function renderMembersTable(members) {
+  const tbody = document.getElementById('members-tbody');
+  if (!members.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="loader-msg">No members found.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = '';
+  for (const m of members) {
+    const photo = m.photos && m.photos.length
+      ? `<img src="/uploads/${m.photos[0]}" onerror="this.style.display='none'">`
+      : `<div class="no-photo-avatar">👤</div>`;
+    const roleCls = m.role === 'male' ? 'badge-male' : m.role === 'female' ? 'badge-female' : 'badge-other';
+    const roleLabel = m.role === 'male' ? 'Sugar Daddy' : m.role === 'female' ? 'Sugar Baby' : (m.role || '—');
+    const joined = m.created_at ? new Date(m.created_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+    const isSel = mSelected.has(m.id);
+
+    const tr = document.createElement('tr');
+    tr.dataset.id = m.id;
+    if (isSel) tr.classList.add('sel-row');
+    tr.innerHTML = `
+      <td class="td-check"><input type="checkbox" ${isSel ? 'checked' : ''} onchange="toggleMemberRow(this, '${m.id}')"></td>
+      <td>
+        <div class="member-avatar">
+          ${photo}
+          <div>
+            <div class="member-name">${esc(m.display_name || '—')}</div>
+            <div class="member-sub">${m.age ? m.age + ' yrs' : ''} ${m.gender ? '· ' + m.gender : ''}</div>
+          </div>
+        </div>
+      </td>
+      <td class="td-email">${esc(m.email)}</td>
+      <td><span class="badge ${roleCls}">${roleLabel}</span></td>
+      <td>${esc(m.location_text || '—')}</td>
+      <td>${esc((m.occupation || '—').split(' ').slice(0,4).join(' '))}</td>
+      <td class="td-num">${m.swipe_count || 0}</td>
+      <td class="td-num">${m.match_count || 0}</td>
+      <td class="td-date">${joined}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function toggleMemberRow(chk, id) {
+  const tr = chk.closest('tr');
+  if (chk.checked) { mSelected.add(id); tr.classList.add('sel-row'); }
+  else { mSelected.delete(id); tr.classList.remove('sel-row'); }
+  document.getElementById('msel-count').textContent = `${mSelected.size} selected`;
+  document.getElementById('chk-all-members').indeterminate =
+    mSelected.size > 0 && mSelected.size < document.querySelectorAll('#members-tbody tr').length;
+}
+
+function toggleAllMembers(masterChk) {
+  document.querySelectorAll('#members-tbody input[type="checkbox"]').forEach(chk => {
+    chk.checked = masterChk.checked;
+    toggleMemberRow(chk, chk.closest('tr').dataset.id);
+  });
+}
+
+function selectAllMembers() {
+  document.querySelectorAll('#members-tbody input[type="checkbox"]').forEach(chk => {
+    if (!chk.checked) { chk.checked = true; toggleMemberRow(chk, chk.closest('tr').dataset.id); }
+  });
+}
+function deselectAllMembers() {
+  document.querySelectorAll('#members-tbody input[type="checkbox"]').forEach(chk => {
+    if (chk.checked) { chk.checked = false; toggleMemberRow(chk, chk.closest('tr').dataset.id); }
+  });
+  document.getElementById('chk-all-members').checked = false;
+}
+
+function renderMemberPagination(total, page) {
+  const totalPages = Math.ceil(total / M_PAGE_SIZE);
+  if (totalPages <= 1) return;
+  document.getElementById('m-pagination').style.display = 'flex';
+  document.getElementById('mpage-info').textContent = `Page ${page} of ${totalPages}`;
+  document.getElementById('mbtn-prev').disabled = page <= 1;
+  document.getElementById('mbtn-next').disabled = page >= totalPages;
+}
+
+function goMemberPage(page) { loadMembers(page); window.scrollTo(0,0); }
+
+/* ════════════════════════════════════════
+   CONFIRM / DELETE (shared)
+════════════════════════════════════════ */
+function showConfirm(ctx) {
+  const count = ctx === 'members' ? mSelected.size : selected.size;
+  if (count === 0) return alert('No items selected.');
+  deleteContext = ctx;
+  const noun = ctx === 'members' ? 'member' : 'profile';
+  document.getElementById('confirm-title').textContent = `Delete ${noun}${count > 1 ? 's' : ''}?`;
+  document.getElementById('confirm-msg').textContent =
+    `This will permanently delete ${count} ${noun}${count > 1 ? 's' : ''}. This cannot be undone.`;
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+
+function hideConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('show');
+}
+
+async function doDelete() {
+  hideConfirm();
+  if (deleteContext === 'members') {
+    const ids = [...mSelected];
+    const res  = await fetch('/api/admin/members', {
+      method: 'DELETE',
+      headers: { 'x-admin-key': ADMIN_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    });
+    const data = await res.json();
+    alert(`Deleted ${data.deleted} member${data.deleted !== 1 ? 's' : ''}.`);
+    mSelected.clear();
+    document.getElementById('msel-count').textContent = '0 selected';
+    loadMembers(memberPage);
+  } else {
+    const ids = [...selected];
+    const res  = await fetch('/api/admin/profiles', {
+      method: 'DELETE',
+      headers: { 'x-admin-key': ADMIN_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    });
+    const data = await res.json();
+    alert(`Deleted ${data.deleted} profile${data.deleted !== 1 ? 's' : ''}.`);
+    selected.clear();
+    document.getElementById('sel-count').textContent = '0 selected';
+    loadGroups();
+    loadPage(currentPage);
+  }
+}
+
+/* ════════════════════════════════════════
+   CAMPAIGNS — VISUAL BUILDER + HTML EDITOR
+════════════════════════════════════════ */
+
+let editorMode = 'visual';   // 'visual' | 'html'
+let benefitCount = 0;
+let campaignSentStats = [];
+
+/* ── Theme definitions ── */
+const THEMES = {
+  dark:  { headerBg:'linear-gradient(135deg,#1A0A05,#4A1030)', bodyBg:'#f5f0ea', cardBg:'#fff', textColor:'#5a4a3a', benefitBg:'#faf5ee', btnBg:'linear-gradient(135deg,#C49A2A,#E8C060)', btnColor:'#fff', footerBg:'#faf5ee', logoColor:'#E8C060' },
+  light: { headerBg:'linear-gradient(135deg,#C49A2A,#E8C060)', bodyBg:'#f9f5ee', cardBg:'#fff', textColor:'#3a2a1a', benefitBg:'#fff8ee', btnBg:'linear-gradient(135deg,#1A0A05,#4A1030)', btnColor:'#E8C060', footerBg:'#fff8ee', logoColor:'#fff' },
+  rose:  { headerBg:'linear-gradient(135deg,#3a0820,#6a1040)', bodyBg:'#fdf5f8', cardBg:'#fff', textColor:'#4a2a35', benefitBg:'#fdf0f5', btnBg:'linear-gradient(135deg,#C49A2A,#E8C060)', btnColor:'#fff', footerBg:'#fdf0f5', logoColor:'#ffd6e8' }
+};
+
+/* ── Build HTML from visual fields ── */
+function buildEmailHTML() {
+  const theme   = document.querySelector('#theme-pills .cmp-pill.active')?.dataset.val || 'dark';
+  const t       = THEMES[theme];
+  const headline = document.getElementById('vb-headline')?.value.trim() || '';
+  const opening  = document.getElementById('vb-opening')?.value.trim()  || '';
+  const ctaText  = document.getElementById('vb-cta-text')?.value.trim() || '';
+  const ctaUrl   = document.getElementById('vb-cta-url')?.value.trim()  || 'https://aiyashi.vip';
+  const closing  = document.getElementById('vb-closing')?.value.trim()  || '';
+
+  // Collect benefits
+  const bRows = document.querySelectorAll('.benefit-row');
+  const benefits = [];
+  bRows.forEach(row => {
+    const icon  = row.querySelector('.b-icon')?.value.trim()  || '';
+    const title = row.querySelector('.b-title')?.value.trim() || '';
+    const desc  = row.querySelector('.b-desc')?.value.trim()  || '';
+    if (title) benefits.push({ icon, title, desc });
+  });
+
+  const benefitsHtml = benefits.length ? `
+    <div style="background:${t.benefitBg};border-radius:14px;padding:24px;margin-bottom:28px">
+      ${benefits.map((b, i) => `
+        <div style="display:flex;align-items:flex-start;${i < benefits.length-1 ? 'margin-bottom:16px' : ''}">
+          <span style="font-size:22px;margin-right:14px;flex-shrink:0">${esc(b.icon||'•')}</span>
+          <div>
+            <div style="font-weight:700;color:#1A0A05;font-size:15px">${esc(b.title)}</div>
+            ${b.desc ? `<div style="font-size:13px;color:#9C8878;margin-top:3px">${esc(b.desc)}</div>` : ''}
+          </div>
+        </div>`).join('')}
+    </div>` : '';
+
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:${t.bodyBg};font-family:Georgia,serif">
+<div style="max-width:600px;margin:40px auto;background:${t.cardBg};border-radius:20px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,.08)">
+  <div style="background:${t.headerBg};padding:44px 40px;text-align:center">
+    <div style="font-size:32px;color:${t.logoColor};margin-bottom:6px">✦</div>
+    <div style="font-size:30px;font-weight:300;color:${t.logoColor};letter-spacing:4px">AIYASHI</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:8px;letter-spacing:2px">WHERE SUCCESSFUL MEETS GENUINE</div>
+  </div>
+  <div style="padding:44px 40px">
+    ${headline ? `<h1 style="font-size:28px;color:#1A0A05;margin:0 0 14px;font-weight:400;font-family:Georgia,serif">${esc(headline)}</h1>` : ''}
+    ${opening  ? `<p style="color:${t.textColor};line-height:1.8;margin:0 0 26px;font-size:15px">${esc(opening).replace(/\n/g,'<br>')}</p>` : ''}
+    ${benefitsHtml}
+    ${ctaText  ? `<a href="${esc(ctaUrl)}" style="display:block;background:${t.btnBg};color:${t.btnColor};text-align:center;padding:18px 32px;border-radius:50px;text-decoration:none;font-size:16px;font-weight:700;margin-bottom:28px;font-family:Arial,sans-serif">${esc(ctaText)}</a>` : ''}
+    ${closing  ? `<p style="color:#9C8878;font-size:13px;line-height:1.7;margin:0">${esc(closing).replace(/\n/g,'<br>')}</p>` : ''}
+  </div>
+  <div style="background:${t.footerBg};padding:24px 40px;text-align:center;border-top:1px solid #ece5d8">
+    <div style="font-size:12px;color:#b09a80;line-height:2">
+      © 2026 Aiyashi Inc. &nbsp;·&nbsp; <a href="https://aiyashi.vip" style="color:#C49A2A;text-decoration:none">aiyashi.vip</a> &nbsp;·&nbsp;
+      <a href="mailto:info@aiyashi.vip" style="color:#C49A2A;text-decoration:none">info@aiyashi.vip</a><br>
+      <a href="https://aiyashi.vip/unsubscribe" style="color:#b09a80;text-decoration:none;font-size:11px">Unsubscribe</a>
+    </div>
+  </div>
+</div></body></html>`;
+}
+
+/* ── Get current HTML (visual or raw) ── */
+function getCurrentHtml() {
+  return editorMode === 'visual' ? buildEmailHTML() : (document.getElementById('cmp-body')?.value.trim() || '');
+}
+
+/* ── Live preview ── */
+let _previewTimer = null;
+function livePreview() {
+  clearTimeout(_previewTimer);
+  _previewTimer = setTimeout(() => {
+    const iframe = document.getElementById('preview-iframe-live');
+    if (iframe) iframe.srcdoc = getCurrentHtml();
+  }, 250);
+}
+
+/* ── Preview width toggle ── */
+function setPreviewWidth(w, btn) {
+  document.getElementById('preview-wrap').style.maxWidth = w;
+  document.querySelectorAll('#preview-wrap').forEach(() => {});
+  btn.closest('.cmp-pills').querySelectorAll('.cmp-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+/* ── Subject hint ── */
+function updateSubjectHint(input) {
+  const len = input.value.length;
+  const hint = document.getElementById('subject-hint');
+  if (!hint) return;
+  hint.textContent = len > 0 ? `${len}/200 characters` : '';
+  hint.style.color = len > 60 ? '#e5a020' : '#555';
+}
+
+/* ── Mode toggle ── */
+function setEditorMode(mode) {
+  editorMode = mode;
+  document.getElementById('btn-mode-visual').classList.toggle('active', mode === 'visual');
+  document.getElementById('btn-mode-html').classList.toggle('active', mode === 'html');
+  document.getElementById('visual-builder').style.display = mode === 'visual' ? 'block' : 'none';
+  document.getElementById('html-editor').style.display    = mode === 'html'   ? 'block' : 'none';
+
+  if (mode === 'html') {
+    // Sync visual → HTML
+    document.getElementById('cmp-body').value = buildEmailHTML();
+  }
+  livePreview();
+}
+
+/* ── Pill selector ── */
+function setPill(group, btn) {
+  btn.closest('.cmp-pills').querySelectorAll('.cmp-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+/* ── Benefits ── */
+function addBenefit(icon='', title='', desc='') {
+  const id = ++benefitCount;
+  const list = document.getElementById('vb-benefits-list');
+  const row = document.createElement('div');
+  row.className = 'benefit-row';
+  row.dataset.id = id;
+  row.innerHTML = `
+    <input class="b-icon" placeholder="💰" value="${esc(icon)}" maxlength="4" oninput="livePreview()" style="text-align:center;font-size:18px">
+    <input class="b-title" placeholder="Benefit title" value="${esc(title)}" oninput="livePreview()">
+    <input class="b-desc"  placeholder="Short description (optional)" value="${esc(desc)}" oninput="livePreview()">
+    <button class="benefit-del" onclick="this.closest('.benefit-row').remove();livePreview()" title="Remove">✕</button>`;
+  list.appendChild(row);
+  livePreview();
+}
+
+/* ── Template loader (fills visual fields) ── */
+const TEMPLATE_DATA = {
+  sugar_baby: {
+    subject: "💛 You're Invited: Get $30 Free + Find Your Perfect Match on Aiyashi",
+    theme: 'dark', audience: 'women',
+    headline: "You're Invited 💛",
+    opening: "We've handpicked you for an exclusive invitation to Aiyashi — India's premier platform connecting successful, generous men with genuine, elegant women across the USA.\n\nJoin today and receive these exclusive benefits — completely free, no card needed:",
+    benefits: [
+      { icon:'💰', title:'$30 Free Credit — Instantly', desc:'Added to your wallet the moment you sign up. Use for boosts & super likes.' },
+      { icon:'⭐', title:'30 Days Premium — Free',      desc:'Unlimited likes, see who viewed your profile, zero ads — for a full month.' },
+      { icon:'💵', title:'Earn Up to $200 in Rewards',  desc:'Connect with 5+ Sugar Daddies and unlock real cash rewards sent to you directly.' },
+    ],
+    ctaText: 'Join Free — Claim Your $30 Credit ✦',
+    ctaUrl:  'https://aiyashi.vip?src=email_sb',
+    closing: 'Thousands of verified, successful men are already waiting to meet someone like you.\nEvery profile is verified — no fake profiles, no bots, no wasted time.\n\n— The Aiyashi Team 💛'
+  },
+  sugar_daddy: {
+    subject: "💎 Exclusive Invite: Meet Genuine, Elegant Women on Aiyashi",
+    theme: 'dark', audience: 'men',
+    headline: "Exclusive Invitation 💎",
+    opening: "You've been personally invited to Aiyashi — a curated platform where successful, ambitious men connect with genuine, elegant women who appreciate the finer things in life.\n\nUnlike mainstream apps, every member on Aiyashi is verified and serious. No games, no time-wasters.",
+    benefits: [
+      { icon:'✓', title:'Verified Members Only',      desc:'Every profile is ID or selfie verified. Real people only.' },
+      { icon:'✓', title:'Exclusive Community',        desc:'Curated profiles of educated, career-driven women from top US cities.' },
+      { icon:'✓', title:'Discreet & Private',         desc:'Your profile visibility is fully in your control.' },
+    ],
+    ctaText: 'Create My Profile — It\'s Free ✦',
+    ctaUrl:  'https://aiyashi.vip?src=email_sd',
+    closing: '— The Aiyashi Team'
+  },
+  re_engage: {
+    subject: "We miss you 💛 — New matches are waiting for you on Aiyashi",
+    theme: 'rose', audience: 'all',
+    headline: "We've missed you! 💛",
+    opening: "It's been a while since we've seen you on Aiyashi — and a lot has changed!\nNew verified members have joined, and some of them may be a perfect match for you.",
+    benefits: [
+      { icon:'🔥', title:'New Members This Week',     desc:'Hundreds of verified, genuine profiles have joined since your last visit.' },
+      { icon:'💬', title:'Messages Waiting',          desc:'You may have unread messages from people who liked your profile.' },
+      { icon:'⭐', title:'Your Premium is Still Active', desc:'Log back in to continue enjoying all Premium features.' },
+    ],
+    ctaText: 'See Who\'s New — Log Back In ✦',
+    ctaUrl:  'https://aiyashi.vip?src=email_re',
+    closing: 'Your profile and all your matches are still safely saved. Just log in to pick up where you left off.\n\n— The Aiyashi Team 💛'
+  },
+  custom: { subject:'', theme:'dark', audience:'all', headline:'', opening:'', benefits:[], ctaText:'', ctaUrl:'https://aiyashi.vip', closing:'' }
+};
+
+function loadTemplate(key) {
+  const d = TEMPLATE_DATA[key];
+  if (!d) return;
+  fillVisualFields(d);
+  setEditorMode('visual');
+  // Reset state
+  validEmails = [];
+  document.getElementById('recipient-count').textContent = '0 recipients';
+  document.getElementById('recipient-preview').style.display = 'none';
+  document.getElementById('campaign-result').style.display  = 'none';
+  document.getElementById('campaign-progress').style.display = 'none';
+}
+
+function fillVisualFields(d) {
+  document.getElementById('cmp-subject').value   = d.subject  || '';
+  document.getElementById('vb-headline').value   = d.headline || '';
+  document.getElementById('vb-opening').value    = d.opening  || '';
+  document.getElementById('vb-cta-text').value   = d.ctaText  || '';
+  document.getElementById('vb-cta-url').value    = d.ctaUrl   || 'https://aiyashi.vip';
+  document.getElementById('vb-closing').value    = d.closing  || '';
+
+  // Theme
+  document.querySelectorAll('#theme-pills .cmp-pill').forEach(p => p.classList.toggle('active', p.dataset.val === (d.theme||'dark')));
+  // Audience
+  document.querySelectorAll('#audience-pills .cmp-pill').forEach(p => p.classList.toggle('active', p.dataset.val === (d.audience||'all')));
+  // Benefits
+  document.getElementById('vb-benefits-list').innerHTML = '';
+  benefitCount = 0;
+  (d.benefits || []).forEach(b => addBenefit(b.icon, b.title, b.desc));
+  updateSubjectHint(document.getElementById('cmp-subject'));
+  livePreview();
+}
+
+/* ── Save / Load campaigns (localStorage) ── */
+function getCampaigns() {
+  try { return JSON.parse(localStorage.getItem('aiyashi_campaigns') || '[]'); } catch { return []; }
+}
+function setCampaigns(list) {
+  localStorage.setItem('aiyashi_campaigns', JSON.stringify(list));
+  renderSavedList();
+}
+
+function saveCampaignPrompt() {
+  document.getElementById('save-name-input').value = document.getElementById('cmp-subject').value.trim().slice(0,60) || '';
+  document.getElementById('save-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('save-name-input').focus(), 100);
+}
+
+function doSaveCampaign() {
+  const name = document.getElementById('save-name-input').value.trim();
+  if (!name) { alert('Please enter a name for this campaign.'); return; }
+
+  const data = {
+    id:   Date.now(),
+    name,
+    savedAt: new Date().toLocaleDateString(),
+    mode: editorMode,
+    subject: document.getElementById('cmp-subject').value,
+    theme:    document.querySelector('#theme-pills .cmp-pill.active')?.dataset.val || 'dark',
+    audience: document.querySelector('#audience-pills .cmp-pill.active')?.dataset.val || 'all',
+    headline: document.getElementById('vb-headline')?.value || '',
+    opening:  document.getElementById('vb-opening')?.value  || '',
+    benefits: [...document.querySelectorAll('.benefit-row')].map(row => ({
+      icon:  row.querySelector('.b-icon')?.value  || '',
+      title: row.querySelector('.b-title')?.value || '',
+      desc:  row.querySelector('.b-desc')?.value  || '',
+    })),
+    ctaText: document.getElementById('vb-cta-text')?.value || '',
+    ctaUrl:  document.getElementById('vb-cta-url')?.value  || '',
+    closing: document.getElementById('vb-closing')?.value  || '',
+    html:    document.getElementById('cmp-body')?.value     || '',
+  };
+
+  const list = getCampaigns();
+  list.unshift(data);
+  setCampaigns(list);
+  document.getElementById('save-modal').style.display = 'none';
+  alert(`✅ Campaign "${name}" saved!`);
+}
+
+function loadSavedCampaign(id) {
+  const c = getCampaigns().find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('cmp-subject').value = c.subject || '';
+  if (c.mode === 'html' && c.html) {
+    setEditorMode('html');
+    document.getElementById('cmp-body').value = c.html;
+  } else {
+    fillVisualFields(c);
+    setEditorMode('visual');
+  }
+  toggleSavedDrawer(false);
+}
+
+function duplicateSavedCampaign(id) {
+  const list = getCampaigns();
+  const c = list.find(x => x.id === id);
+  if (!c) return;
+  const clone = { ...c, id: Date.now(), name: c.name + ' (copy)', savedAt: new Date().toLocaleDateString() };
+  list.unshift(clone);
+  setCampaigns(list);
+}
+
+function deleteSavedCampaign(id) {
+  if (!confirm('Delete this saved campaign?')) return;
+  setCampaigns(getCampaigns().filter(x => x.id !== id));
+}
+
+function renderSavedList() {
+  const list = getCampaigns();
+  const badge = document.getElementById('saved-count-badge');
+  if (badge) badge.textContent = list.length;
+  const el = document.getElementById('saved-list');
+  if (!el) return;
+  if (!list.length) { el.innerHTML = '<div style="color:#555;font-size:13px">No saved campaigns yet.</div>'; return; }
+  el.innerHTML = list.map(c => `
+    <div class="saved-item">
+      <div class="saved-item-name">${esc(c.name)}</div>
+      <div class="saved-item-date">${c.savedAt||''}</div>
+      <div class="saved-item-btns">
+        <button class="saved-item-btn" onclick="loadSavedCampaign(${c.id})">Load</button>
+        <button class="saved-item-btn" onclick="duplicateSavedCampaign(${c.id})">Duplicate</button>
+        <button class="saved-item-btn" style="color:#e55;border-color:#4a2a2a" onclick="deleteSavedCampaign(${c.id})">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function toggleSavedDrawer(force) {
+  const drawer = document.getElementById('saved-drawer');
+  const show = force !== undefined ? force : drawer.style.display === 'none';
+  drawer.style.display = show ? 'block' : 'none';
+  if (show) renderSavedList();
+}
+
+function newCampaign() {
+  if (!confirm('Start a new blank campaign? Unsaved changes will be lost.')) return;
+  fillVisualFields(TEMPLATE_DATA.custom);
+  document.getElementById('cmp-subject').value = '';
+  document.getElementById('cmp-template').value = '';
+  setEditorMode('visual');
+}
+
+function initCampaignTab() {
+  renderSavedList();
+  livePreview();
+}
+
+/* ── Email Templates ── */
+const EMAIL_TEMPLATES = {
+  sugar_baby: {
+    subject: "💛 You're Invited: Get $30 Free + Find Your Perfect Match on Aiyashi",
+    html: `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5f0ea;font-family:Georgia,serif">
+<div style="max-width:600px;margin:40px auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,.08)">
+
+  <!-- Header -->
+  <div style="background:linear-gradient(135deg,#1A0A05,#4A1030);padding:44px 40px;text-align:center">
+    <div style="font-size:32px;color:#E8C060;margin-bottom:6px">✦</div>
+    <div style="font-size:30px;font-weight:300;color:#E8C060;letter-spacing:4px">AIYASHI</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:8px;letter-spacing:2px">WHERE SUCCESSFUL MEETS GENUINE</div>
+  </div>
+
+  <!-- Body -->
+  <div style="padding:44px 40px">
+    <h1 style="font-size:28px;color:#1A0A05;margin:0 0 14px;font-weight:400;font-family:Georgia,serif">You're Invited 💛</h1>
+    <p style="color:#5a4a3a;line-height:1.8;margin:0 0 18px;font-size:15px">
+      We've handpicked you for an exclusive invitation to <strong>Aiyashi</strong> — India's premier platform connecting
+      successful, generous men with genuine, elegant women across the USA.
+    </p>
+    <p style="color:#5a4a3a;line-height:1.8;margin:0 0 26px;font-size:15px">
+      Join today and receive these exclusive benefits — <strong>completely free, no card needed:</strong>
+    </p>
+
+    <!-- Benefits -->
+    <div style="background:#faf5ee;border-radius:14px;padding:24px;margin-bottom:28px">
+      <div style="display:flex;align-items:flex-start;margin-bottom:16px">
+        <span style="font-size:22px;margin-right:14px;flex-shrink:0">💰</span>
+        <div><div style="font-weight:700;color:#1A0A05;font-size:15px">$30 Free Credit — Instantly</div>
+        <div style="font-size:13px;color:#9C8878;margin-top:3px">Added to your wallet the moment you sign up. Use for boosts &amp; super likes.</div></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;margin-bottom:16px">
+        <span style="font-size:22px;margin-right:14px;flex-shrink:0">⭐</span>
+        <div><div style="font-weight:700;color:#1A0A05;font-size:15px">30 Days Premium — Free</div>
+        <div style="font-size:13px;color:#9C8878;margin-top:3px">Unlimited likes, see who viewed your profile, zero ads — for a full month.</div></div>
+      </div>
+      <div style="display:flex;align-items:flex-start">
+        <span style="font-size:22px;margin-right:14px;flex-shrink:0">💵</span>
+        <div><div style="font-weight:700;color:#1A0A05;font-size:15px">Earn Up to $200 in Rewards</div>
+        <div style="font-size:13px;color:#9C8878;margin-top:3px">Connect with 5+ Sugar Daddies and unlock real cash rewards sent to you directly.</div></div>
+      </div>
+    </div>
+
+    <!-- CTA Button -->
+    <a href="https://aiyashi.vip?src=email_sb" style="display:block;background:linear-gradient(135deg,#C49A2A,#E8C060);color:#fff;text-align:center;padding:18px 32px;border-radius:50px;text-decoration:none;font-size:16px;font-weight:700;margin-bottom:28px;font-family:Arial,sans-serif">
+      Join Free — Claim Your $30 Credit ✦
+    </a>
+
+    <p style="color:#9C8878;font-size:13px;line-height:1.7;margin:0 0 20px">
+      Thousands of verified, successful men are already waiting to meet someone like you.
+      Every profile is verified — no fake profiles, no bots, no wasted time.
+    </p>
+    <p style="color:#9C8878;font-size:13px;line-height:1.7;margin:0">
+      — The Aiyashi Team 💛
+    </p>
+  </div>
+
+  <!-- Footer -->
+  <div style="background:#faf5ee;padding:24px 40px;text-align:center;border-top:1px solid #ece5d8">
+    <div style="font-size:12px;color:#b09a80;line-height:2">
+      © 2026 Aiyashi Inc. &nbsp;·&nbsp;
+      <a href="https://aiyashi.vip" style="color:#C49A2A;text-decoration:none">aiyashi.vip</a> &nbsp;·&nbsp;
+      <a href="mailto:info@aiyashi.vip" style="color:#C49A2A;text-decoration:none">info@aiyashi.vip</a><br>
+      <a href="https://aiyashi.vip/unsubscribe" style="color:#b09a80;text-decoration:none;font-size:11px">Unsubscribe</a>
+    </div>
+  </div>
+
+</div>
+</body></html>`
+  },
+
+  sugar_daddy: {
+    subject: "💎 Exclusive Invite: Meet Genuine, Elegant Women on Aiyashi",
+    html: `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5f0ea;font-family:Georgia,serif">
+<div style="max-width:600px;margin:40px auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,.08)">
+
+  <!-- Header -->
+  <div style="background:linear-gradient(135deg,#1A0A05,#4A1030);padding:44px 40px;text-align:center">
+    <div style="font-size:32px;color:#E8C060;margin-bottom:6px">✦</div>
+    <div style="font-size:30px;font-weight:300;color:#E8C060;letter-spacing:4px">AIYASHI</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:8px;letter-spacing:2px">WHERE SUCCESSFUL MEETS GENUINE</div>
+  </div>
+
+  <!-- Body -->
+  <div style="padding:44px 40px">
+    <h1 style="font-size:28px;color:#1A0A05;margin:0 0 14px;font-weight:400;font-family:Georgia,serif">Exclusive Invitation 💎</h1>
+    <p style="color:#5a4a3a;line-height:1.8;margin:0 0 18px;font-size:15px">
+      You've been personally invited to <strong>Aiyashi</strong> — a curated platform where successful, ambitious men
+      connect with genuine, elegant women who appreciate the finer things in life.
+    </p>
+    <p style="color:#5a4a3a;line-height:1.8;margin:0 0 26px;font-size:15px">
+      Unlike mainstream apps, every member on Aiyashi is verified and serious. No games, no time-wasters.
+    </p>
+
+    <!-- Why Aiyashi -->
+    <div style="background:#faf5ee;border-radius:14px;padding:24px;margin-bottom:28px">
+      <div style="font-size:13px;font-weight:700;color:#C49A2A;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px">Why Aiyashi?</div>
+      <div style="display:flex;align-items:flex-start;margin-bottom:14px">
+        <span style="font-size:20px;margin-right:12px;flex-shrink:0">✓</span>
+        <div style="color:#5a4a3a;font-size:14px;line-height:1.6"><strong>Verified Members</strong> — Every profile is ID or selfie verified. Real people only.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;margin-bottom:14px">
+        <span style="font-size:20px;margin-right:12px;flex-shrink:0">✓</span>
+        <div style="color:#5a4a3a;font-size:14px;line-height:1.6"><strong>Exclusive Community</strong> — Curated profiles of educated, career-driven women from top US cities.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start">
+        <span style="font-size:20px;margin-right:12px;flex-shrink:0">✓</span>
+        <div style="color:#5a4a3a;font-size:14px;line-height:1.6"><strong>Discreet &amp; Private</strong> — Your profile visibility is fully in your control.</div>
+      </div>
+    </div>
+
+    <!-- CTA Button -->
+    <a href="https://aiyashi.vip?src=email_sd" style="display:block;background:linear-gradient(135deg,#C49A2A,#E8C060);color:#fff;text-align:center;padding:18px 32px;border-radius:50px;text-decoration:none;font-size:16px;font-weight:700;margin-bottom:28px;font-family:Arial,sans-serif">
+      Create My Profile — It's Free ✦
+    </a>
+
+    <p style="color:#9C8878;font-size:13px;line-height:1.7;margin:0">
+      — The Aiyashi Team
+    </p>
+  </div>
+
+  <!-- Footer -->
+  <div style="background:#faf5ee;padding:24px 40px;text-align:center;border-top:1px solid #ece5d8">
+    <div style="font-size:12px;color:#b09a80;line-height:2">
+      © 2026 Aiyashi Inc. &nbsp;·&nbsp;
+      <a href="https://aiyashi.vip" style="color:#C49A2A;text-decoration:none">aiyashi.vip</a> &nbsp;·&nbsp;
+      <a href="mailto:info@aiyashi.vip" style="color:#C49A2A;text-decoration:none">info@aiyashi.vip</a><br>
+      <a href="https://aiyashi.vip/unsubscribe" style="color:#b09a80;text-decoration:none;font-size:11px">Unsubscribe</a>
+    </div>
+  </div>
+
+</div>
+</body></html>`
+  },
+
+  re_engage: {
+    subject: "We miss you 💛 — New matches are waiting for you on Aiyashi",
+    html: `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5f0ea;font-family:Georgia,serif">
+<div style="max-width:600px;margin:40px auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,.08)">
+
+  <!-- Header -->
+  <div style="background:linear-gradient(135deg,#1A0A05,#4A1030);padding:44px 40px;text-align:center">
+    <div style="font-size:32px;color:#E8C060;margin-bottom:6px">✦</div>
+    <div style="font-size:30px;font-weight:300;color:#E8C060;letter-spacing:4px">AIYASHI</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:8px;letter-spacing:2px">WHERE SUCCESSFUL MEETS GENUINE</div>
+  </div>
+
+  <!-- Body -->
+  <div style="padding:44px 40px">
+    <h1 style="font-size:28px;color:#1A0A05;margin:0 0 14px;font-weight:400;font-family:Georgia,serif">We've missed you! 💛</h1>
+    <p style="color:#5a4a3a;line-height:1.8;margin:0 0 18px;font-size:15px">
+      It's been a while since we've seen you on <strong>Aiyashi</strong> — and a lot has changed!
+      New verified members have joined, and some of them may be a perfect match for you.
+    </p>
+
+    <div style="background:#faf5ee;border-radius:14px;padding:24px;margin-bottom:28px;text-align:center">
+      <div style="font-size:36px;margin-bottom:8px">🔥</div>
+      <div style="font-size:18px;font-weight:700;color:#1A0A05;margin-bottom:6px">New Members This Week</div>
+      <div style="font-size:14px;color:#9C8878">Hundreds of verified, genuine profiles have joined since your last visit. Your perfect match might already be waiting.</div>
+    </div>
+
+    <!-- CTA Button -->
+    <a href="https://aiyashi.vip?src=email_re" style="display:block;background:linear-gradient(135deg,#C49A2A,#E8C060);color:#fff;text-align:center;padding:18px 32px;border-radius:50px;text-decoration:none;font-size:16px;font-weight:700;margin-bottom:28px;font-family:Arial,sans-serif">
+      See Who's New — Log Back In ✦
+    </a>
+
+    <p style="color:#9C8878;font-size:13px;line-height:1.7;margin:0">
+      Your profile and all your matches are still safely saved. Just log in to pick up where you left off.
+      <br><br>— The Aiyashi Team 💛
+    </p>
+  </div>
+
+  <!-- Footer -->
+  <div style="background:#faf5ee;padding:24px 40px;text-align:center;border-top:1px solid #ece5d8">
+    <div style="font-size:12px;color:#b09a80;line-height:2">
+      © 2026 Aiyashi Inc. &nbsp;·&nbsp;
+      <a href="https://aiyashi.vip" style="color:#C49A2A;text-decoration:none">aiyashi.vip</a> &nbsp;·&nbsp;
+      <a href="mailto:info@aiyashi.vip" style="color:#C49A2A;text-decoration:none">info@aiyashi.vip</a><br>
+      <a href="https://aiyashi.vip/unsubscribe" style="color:#b09a80;text-decoration:none;font-size:11px">Unsubscribe</a>
+    </div>
+  </div>
+
+</div>
+</body></html>`
+  },
+  custom: { subject: '', html: '' }
+};
+
+let validEmails = [];
+
+function initCampaignTab() {
+  // nothing to init on first open
+}
+
+function loadTemplate(key) {
+  const tpl = EMAIL_TEMPLATES[key];
+  if (!tpl) return;
+  document.getElementById('cmp-subject').value = tpl.subject || '';
+  document.getElementById('cmp-body').value    = tpl.html    || '';
+  // Reset state
+  validEmails = [];
+  document.getElementById('recipient-count').textContent = '0 recipients';
+  document.getElementById('recipient-preview').style.display = 'none';
+  document.getElementById('campaign-result').style.display  = 'none';
+  document.getElementById('campaign-progress').style.display = 'none';
+}
+
+function parseRecipients() {
+  const raw = document.getElementById('cmp-emails').value;
+  // Split on newlines, commas, semicolons
+  const parts = raw.split(/[\n,;]+/).map(e => e.trim().toLowerCase()).filter(Boolean);
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const valid   = [...new Set(parts.filter(e => re.test(e)))];
+  const invalid = parts.filter(e => e && !re.test(e));
+  validEmails = valid;
+
+  document.getElementById('recipient-count').textContent = `${valid.length} valid recipients`;
+  document.getElementById('recipient-preview').style.display = 'block';
+  document.getElementById('valid-count').textContent   = `${valid.length} valid`;
+  document.getElementById('invalid-count').textContent = `${invalid.length} invalid`;
+  document.getElementById('invalid-list').textContent  = invalid.length ? 'Invalid: ' + invalid.join(', ') : '';
+}
+
+function previewEmail() {
+  const html = getCurrentHtml();
+  if (!html) { alert('Write or choose a template first.'); return; }
+  const iframe = document.getElementById('preview-iframe');
+  iframe.srcdoc = html;
+  document.getElementById('email-preview-overlay').style.display = 'flex';
+}
+
+function closePreview() {
+  document.getElementById('email-preview-overlay').style.display = 'none';
+}
+
+function showTestSend() {
+  const row = document.getElementById('test-send-row');
+  row.style.display = row.style.display === 'none' ? 'block' : 'none';
+}
+
+async function sendTestEmail() {
+  const to      = document.getElementById('test-email-input').value.trim();
+  const subject = document.getElementById('cmp-subject').value.trim();
+  const html    = getCurrentHtml();
+  const resultEl = document.getElementById('test-send-result');
+  if (!to || !subject || !html) { resultEl.textContent = '⚠ Fill in subject and body first.'; return; }
+  resultEl.textContent = '⏳ Sending…';
+  try {
+    const res  = await fetch('/api/admin/campaign/test', {
+      method: 'POST',
+      headers: { 'x-admin-key': ADMIN_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, subject, html }),
+    });
+    const data = await res.json();
+    resultEl.style.color = res.ok ? '#4caf50' : '#e55';
+    resultEl.textContent = res.ok ? `✅ Sent to ${to}` : `❌ ${data.error}`;
+  } catch (e) {
+    resultEl.style.color = '#e55';
+    resultEl.textContent = '❌ Network error';
+  }
+}
+
+async function startCampaign() {
+  const subject = document.getElementById('cmp-subject').value.trim();
+  const html    = getCurrentHtml();
+
+  if (!subject) { alert('Please enter a subject line.'); return; }
+  if (!html)    { alert('Please build your email or choose a template first.'); return; }
+  if (!validEmails.length) {
+    // Try to parse first
+    parseRecipients();
+    if (!validEmails.length) { alert('No valid recipient emails. Paste emails in the recipients box and click "Validate List".'); return; }
+  }
+
+  const btn = document.getElementById('send-campaign-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Starting…';
+  document.getElementById('campaign-result').style.display   = 'none';
+  document.getElementById('campaign-progress').style.display = 'block';
+  document.getElementById('progress-bar').style.width = '0%';
+  document.getElementById('progress-label').textContent = `0 / ${validEmails.length}`;
+  document.getElementById('progress-status').textContent = 'Connecting to email server…';
+
+  try {
+    const res  = await fetch('/api/admin/campaign', {
+      method: 'POST',
+      headers: { 'x-admin-key': ADMIN_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subject, html, emails: validEmails }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to start');
+
+    // Poll for status
+    pollCampaignStatus(data.jobId, data.total);
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = '✉️ Send Campaign';
+    document.getElementById('progress-status').textContent = '❌ Error: ' + e.message;
+  }
+}
+
+function pollCampaignStatus(jobId, total) {
+  const interval = setInterval(async () => {
+    try {
+      const res  = await fetch(`/api/admin/campaign/status/${jobId}`, { headers: { 'x-admin-key': ADMIN_KEY } });
+      const job  = await res.json();
+
+      const done = job.sent + job.failed;
+      const pct  = total > 0 ? Math.round((done / total) * 100) : 0;
+      document.getElementById('progress-bar').style.width  = pct + '%';
+      document.getElementById('progress-label').textContent = `${done} / ${total}`;
+      document.getElementById('progress-status').textContent = `✅ Sent: ${job.sent}  ❌ Failed: ${job.failed}`;
+
+      if (job.done) {
+        clearInterval(interval);
+        document.getElementById('campaign-progress').style.display = 'none';
+        document.getElementById('campaign-result').style.display   = 'block';
+        document.getElementById('result-detail').innerHTML =
+          `Sent to <strong style="color:#4caf50">${job.sent} addresses</strong> successfully.` +
+          (job.failed ? ` &nbsp;·&nbsp; <span style="color:#e55">${job.failed} failed</span>.` : '');
+        const btn = document.getElementById('send-campaign-btn');
+        btn.disabled = false;
+        btn.textContent = '✉️ Send Campaign';
+        // Update stats
+        campaignSentStats.push({ subject: document.getElementById('cmp-subject').value, sent: job.sent, failed: job.failed, time: new Date().toLocaleTimeString() });
+        const statsEl = document.getElementById('campaign-stats');
+        if (statsEl) statsEl.innerHTML = campaignSentStats.slice(-5).reverse().map(s =>
+          `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #222">
+            <span style="color:#bbb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px">${esc(s.subject)}</span>
+            <span><span style="color:#4caf50">✓${s.sent}</span>${s.failed?` <span style="color:#e55">✗${s.failed}</span>`:''} <span style="color:#555;font-size:11px">${s.time}</span></span>
+          </div>`).join('');
+      }
+    } catch (_) {}
+  }, 1500);
+}
+
+/* ── HTML escape helper ── */
+function esc(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
