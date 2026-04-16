@@ -1744,7 +1744,9 @@ async function sendTestEmail() {
     });
     const data = await res.json();
     resultEl.style.color = res.ok ? '#4caf50' : '#e55';
-    resultEl.textContent = res.ok ? `✅ Sent to ${to}` : `❌ ${data.error}`;
+    resultEl.innerHTML = res.ok
+      ? `✅ Sent to ${to} — check Inbox, Promotions tab, or Spam if not visible.`
+      : `❌ ${data.error}`;
   } catch (e) {
     resultEl.style.color = '#e55';
     resultEl.textContent = '❌ Network error';
@@ -1808,7 +1810,12 @@ function pollCampaignStatus(jobId, total) {
         document.getElementById('campaign-result').style.display   = 'block';
         document.getElementById('result-detail').innerHTML =
           `Sent to <strong style="color:#4caf50">${job.sent} addresses</strong> successfully.` +
-          (job.failed ? ` &nbsp;·&nbsp; <span style="color:#e55">${job.failed} failed</span>.` : '');
+          (job.failed ? ` &nbsp;·&nbsp; <span style="color:#e55">${job.failed} failed</span>.` : '') +
+          `<div style="margin-top:10px;padding:10px;background:#1a2a1a;border-radius:8px;font-size:12px;color:#aaa;line-height:1.7">
+            📬 Emails are on their way!<br>
+            ⚠️ <strong style="color:#e5a020">If not in inbox, check Gmail Promotions tab or Spam folder.</strong><br>
+            💡 To improve deliverability, set up DKIM in Hostinger → Email Settings.
+          </div>`;
         const btn = document.getElementById('send-campaign-btn');
         btn.disabled = false;
         btn.textContent = '✉️ Send Campaign';
