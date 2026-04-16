@@ -343,7 +343,6 @@
     </div>
     <div class="cmp-topbar-right">
       <button class="btn btn-grey" onclick="saveCampaignPrompt()">💾 Save Campaign</button>
-      <button class="btn btn-grey" onclick="showTestSend()">📨 Send Test</button>
     </div>
   </div>
 
@@ -353,16 +352,8 @@
     <div id="saved-list"><div style="color:#555;font-size:13px">No saved campaigns yet.</div></div>
   </div>
 
-  <!-- ── Test send row ── -->
-  <div id="test-send-row" style="display:none;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:14px;margin-bottom:14px">
-    <div style="font-size:13px;font-weight:600;color:#C49A2A;margin-bottom:8px">📨 Send Test Email</div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <input type="email" id="test-email-input" class="cmp-input" style="flex:1;max-width:320px" placeholder="your@email.com">
-      <button class="btn btn-gold" onclick="sendTestEmail()">Send Test</button>
-      <button class="btn btn-grey" onclick="document.getElementById('test-send-row').style.display='none'">✕</button>
-    </div>
-    <div id="test-send-result" style="font-size:12px;margin-top:8px;color:#aaa"></div>
-  </div>
+  <!-- test-send-row kept for backward compat but hidden -->
+  <div id="test-send-row" style="display:none"></div>
 
   <!-- ── Main layout ── -->
   <div class="cmp-layout">
@@ -482,31 +473,32 @@
 
     <!-- COL 3: Recipients + Send -->
     <div>
+
+      <!-- Quick single send -->
       <div class="cmp-card">
-        <div class="cmp-card-title">📋 Recipients</div>
-        <div class="cmp-field">
-          <label class="cmp-label">Paste Email Addresses</label>
-          <textarea id="cmp-emails" class="cmp-textarea" rows="9"
-            placeholder="One per line, or comma / semicolon separated:&#10;&#10;alice@example.com&#10;bob@example.com, carol@example.com"></textarea>
+        <div class="cmp-card-title">📨 Quick Send (1 email)</div>
+        <div style="font-size:12px;color:#666;margin-bottom:10px">Send to one address instantly — great for testing.</div>
+        <div style="display:flex;gap:8px">
+          <input type="email" id="test-email-input" class="cmp-input" placeholder="someone@example.com" style="flex:1">
+          <button class="btn btn-gold" onclick="sendTestEmail()" style="white-space:nowrap">Send ✦</button>
         </div>
-        <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-          <button class="btn btn-grey" onclick="parseRecipients()">✔ Validate List</button>
-          <span id="recipient-count" style="font-size:13px;color:#aaa">0 recipients</span>
-        </div>
-        <div id="recipient-preview" style="display:none">
-          <div class="cmp-label" style="margin-bottom:6px">
-            <span id="valid-count" style="color:#4caf50">0 valid</span> &nbsp;·&nbsp;
-            <span id="invalid-count" style="color:#e55">0 invalid</span>
-          </div>
-          <div id="invalid-list" style="font-size:11px;color:#e55;margin-bottom:8px;word-break:break-all;max-height:60px;overflow-y:auto"></div>
-        </div>
+        <div id="test-send-result" style="font-size:12px;margin-top:8px;color:#aaa;min-height:18px"></div>
       </div>
 
+      <!-- Bulk campaign send -->
       <div class="cmp-card">
-        <div class="cmp-card-title">🚀 Send Campaign</div>
-        <div style="font-size:13px;color:#888;margin-bottom:16px;line-height:1.7">
-          Sends from <strong style="color:#C49A2A">info@aiyashi.vip</strong><br>
-          Requires <code>SMTP_PASS</code> in server <code>.env</code>
+        <div class="cmp-card-title">🚀 Send to Many</div>
+        <div class="cmp-field">
+          <label class="cmp-label">Paste Email Addresses <span id="recipient-count" style="color:#C49A2A;font-size:12px;font-weight:400;text-transform:none;letter-spacing:0;margin-left:6px"></span></label>
+          <textarea id="cmp-emails" class="cmp-textarea" rows="8"
+            oninput="liveParseRecipients()"
+            placeholder="One per line or comma-separated:&#10;&#10;alice@example.com&#10;bob@example.com&#10;carol@example.com"></textarea>
+        </div>
+        <div id="recipient-preview" style="display:none;margin-bottom:12px">
+          <span id="valid-count" style="color:#4caf50;font-size:12px">0 valid</span>
+          &nbsp;·&nbsp;
+          <span id="invalid-count" style="color:#e55;font-size:12px">0 invalid</span>
+          <div id="invalid-list" style="font-size:11px;color:#e55;margin-top:4px;word-break:break-all;max-height:40px;overflow-y:auto"></div>
         </div>
         <button class="btn btn-gold" style="width:100%;padding:14px;font-size:15px" onclick="startCampaign()" id="send-campaign-btn">
           ✉️ Send Campaign
@@ -1698,18 +1690,30 @@ function loadTemplate(key) {
 
 function parseRecipients() {
   const raw = document.getElementById('cmp-emails').value;
-  // Split on newlines, commas, semicolons
   const parts = raw.split(/[\n,;]+/).map(e => e.trim().toLowerCase()).filter(Boolean);
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const valid   = [...new Set(parts.filter(e => re.test(e)))];
   const invalid = parts.filter(e => e && !re.test(e));
   validEmails = valid;
 
-  document.getElementById('recipient-count').textContent = `${valid.length} valid recipients`;
-  document.getElementById('recipient-preview').style.display = 'block';
-  document.getElementById('valid-count').textContent   = `${valid.length} valid`;
-  document.getElementById('invalid-count').textContent = `${invalid.length} invalid`;
-  document.getElementById('invalid-list').textContent  = invalid.length ? 'Invalid: ' + invalid.join(', ') : '';
+  const countEl = document.getElementById('recipient-count');
+  if (countEl) countEl.textContent = valid.length ? `✅ ${valid.length} recipients ready` : '';
+  const previewEl = document.getElementById('recipient-preview');
+  if (previewEl) previewEl.style.display = parts.length ? 'block' : 'none';
+  const validEl = document.getElementById('valid-count');
+  if (validEl) validEl.textContent = `${valid.length} valid`;
+  const invalidEl = document.getElementById('invalid-count');
+  if (invalidEl) invalidEl.textContent = `${invalid.length} invalid`;
+  const invalidList = document.getElementById('invalid-list');
+  if (invalidList) invalidList.textContent = invalid.length ? 'Invalid: ' + invalid.join(', ') : '';
+  return valid;
+}
+
+// Auto-parse as user types (debounced)
+let _parseTimer = null;
+function liveParseRecipients() {
+  clearTimeout(_parseTimer);
+  _parseTimer = setTimeout(() => parseRecipients(), 400);
 }
 
 function previewEmail() {
@@ -1757,13 +1761,18 @@ async function startCampaign() {
   const subject = document.getElementById('cmp-subject').value.trim();
   const html    = getCurrentHtml();
 
-  if (!subject) { alert('Please enter a subject line.'); return; }
-  if (!html)    { alert('Please build your email or choose a template first.'); return; }
-  if (!validEmails.length) {
-    // Try to parse first
-    parseRecipients();
-    if (!validEmails.length) { alert('No valid recipient emails. Paste emails in the recipients box and click "Validate List".'); return; }
+  if (!subject) { alert('⚠️ Please enter a subject line first.'); return; }
+  if (!html)    { alert('⚠️ Please load a template or build your email first.'); return; }
+
+  // Always re-parse emails from textarea
+  const emails = parseRecipients();
+  if (!emails.length) {
+    alert('⚠️ No valid email addresses found.\n\nPaste email addresses in the "Send to Many" box above, then click Send Campaign.');
+    document.getElementById('cmp-emails').focus();
+    return;
   }
+
+  if (!confirm(`Ready to send?\n\nSubject: ${subject}\nRecipients: ${emails.length} address${emails.length > 1 ? 'es' : ''}\n\nClick OK to send now.`)) return;
 
   const btn = document.getElementById('send-campaign-btn');
   btn.disabled = true;
@@ -1771,14 +1780,14 @@ async function startCampaign() {
   document.getElementById('campaign-result').style.display   = 'none';
   document.getElementById('campaign-progress').style.display = 'block';
   document.getElementById('progress-bar').style.width = '0%';
-  document.getElementById('progress-label').textContent = `0 / ${validEmails.length}`;
+  document.getElementById('progress-label').textContent = `0 / ${emails.length}`;
   document.getElementById('progress-status').textContent = 'Connecting to email server…';
 
   try {
     const res  = await fetch('/api/admin/campaign', {
       method: 'POST',
       headers: { 'x-admin-key': ADMIN_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject, html, emails: validEmails }),
+      body: JSON.stringify({ subject, html, emails }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to start');
